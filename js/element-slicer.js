@@ -113,4 +113,110 @@ export default class ElementSlicer {
       data[i + 2] = Math.round(data[i + 2] + (255 - data[i + 2]) * factor);
     }
   }
+
+  findElements(processedData, minSize = 10) {
+    const { width, height } = processedData;
+    const data = processedData.data;
+    const labels = new Int32Array(width * height);
+    const parent = [0]; // Union-Find parent array, index 0 unused
+
+    let nextLabel = 1;
+
+    // Pass 1: assign provisional labels
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = y * width + x;
+        const alpha = data[idx * 4 + 3];
+        if (alpha === 0) continue;
+
+        const neighbors = [];
+        if (x > 0 && labels[idx - 1] > 0) {
+          neighbors.push(labels[idx - 1]);
+        }
+        if (y > 0 && labels[idx - width] > 0) {
+          neighbors.push(labels[idx - width]);
+        }
+        if (x > 0 && y > 0 && labels[idx - width - 1] > 0) {
+          neighbors.push(labels[idx - width - 1]);
+        }
+        if (x < width - 1 && y > 0 && labels[idx - width + 1] > 0) {
+          neighbors.push(labels[idx - width + 1]);
+        }
+
+        if (neighbors.length === 0) {
+          labels[idx] = nextLabel;
+          parent.push(nextLabel);
+          nextLabel++;
+        } else {
+          const minLabel = Math.min(...neighbors);
+          labels[idx] = minLabel;
+          for (const n of neighbors) {
+            this._union(parent, minLabel, n);
+          }
+        }
+      }
+    }
+
+    // Pass 2: flatten labels
+    for (let i = 0; i < labels.length; i++) {
+      if (labels[i] > 0) {
+        labels[i] = this._find(parent, labels[i]);
+      }
+    }
+
+    // Collect bounding boxes
+    const boxes = new Map();
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const label = labels[y * width + x];
+        if (label === 0) continue;
+
+        if (!boxes.has(label)) {
+          boxes.set(label, { minX: x, minY: y, maxX: x, maxY: y, count: 0 });
+        }
+        const b = boxes.get(label);
+        b.minX = Math.min(b.minX, x);
+        b.minY = Math.min(b.minY, y);
+        b.maxX = Math.max(b.maxX, x);
+        b.maxY = Math.max(b.maxY, y);
+        b.count++;
+      }
+    }
+
+    // Filter by minimum size and build result
+    const elements = [];
+    let id = 1;
+    for (const [, b] of boxes) {
+      const w = b.maxX - b.minX + 1;
+      const h = b.maxY - b.minY + 1;
+      if (w >= minSize && h >= minSize) {
+        elements.push({
+          id: id++,
+          x: b.minX,
+          y: b.minY,
+          w,
+          h,
+          pixelCount: b.count,
+        });
+      }
+    }
+
+    return elements;
+  }
+
+  _find(parent, x) {
+    while (parent[x] !== x) {
+      parent[x] = parent[parent[x]];
+      x = parent[x];
+    }
+    return x;
+  }
+
+  _union(parent, a, b) {
+    const ra = this._find(parent, a);
+    const rb = this._find(parent, b);
+    if (ra !== rb) {
+      parent[rb] = ra;
+    }
+  }
 }
