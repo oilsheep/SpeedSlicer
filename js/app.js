@@ -288,8 +288,8 @@ function updateElementList() {
     const thumbDiv = document.createElement('div');
     thumbDiv.className = 'thumb';
     const thumbCanvas = document.createElement('canvas');
-    thumbCanvas.width = 48;
-    thumbCanvas.height = 48;
+    thumbCanvas.width = 44;
+    thumbCanvas.height = 44;
     renderThumbnail(thumbCanvas, el);
     thumbDiv.appendChild(thumbCanvas);
 
@@ -364,11 +364,11 @@ function renderThumbnail(thumbCanvas, el) {
   // Use getElementCanvas for accurate masked thumbnail
   const elCanvas = getElementCanvas(el);
   const tctx = thumbCanvas.getContext('2d');
-  const scale = Math.min(48 / elCanvas.width, 48 / elCanvas.height);
+  const scale = Math.min(44 / elCanvas.width, 44 / elCanvas.height);
   const dw = elCanvas.width * scale;
   const dh = elCanvas.height * scale;
-  const dx = (48 - dw) / 2;
-  const dy = (48 - dh) / 2;
+  const dx = (44 - dw) / 2;
+  const dy = (44 - dh) / 2;
   tctx.drawImage(elCanvas, 0, 0, elCanvas.width, elCanvas.height, dx, dy, dw, dh);
 }
 

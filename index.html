@@ -4,15 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SpeedSlicer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div id="app">
-    <!-- Top bar -->
     <header id="header">
-      <h1>SpeedSlicer</h1>
-      <button id="load-new-image-btn" class="btn-secondary header-btn" data-i18n="loadNewImage"></button>
-      <div id="lang-group">
+      <div class="header-brand">
+        <svg class="logo-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M4 4h6v6H4z"/><path d="M14 4h6v6h-6z"/><path d="M4 14h6v6H4z"/><path d="M17 14v7"/><path d="M14 17h7"/></svg>
+        <h1>SpeedSlicer</h1>
+      </div>
+      <div class="header-actions">
+        <button id="load-new-image-btn" class="btn-ghost" data-i18n="loadNewImage"></button>
         <select id="lang-select"></select>
       </div>
     </header>
@@ -20,12 +25,18 @@
     <div id="main">
       <!-- Left: Element list panel -->
       <div id="elements-panel">
-        <div class="element-list-header">
-          <h3><span data-i18n="elementList"></span> (<span id="element-count">0</span>)</h3>
+        <div class="panel-title-bar">
+          <h3><span data-i18n="elementList"></span> <span class="badge" id="element-count">0</span></h3>
           <div class="element-list-actions">
-            <button id="add-box-btn" class="icon-btn" data-i18n-title="addBoxTitle">+</button>
-            <button id="merge-selected-btn" class="icon-btn" data-i18n-title="mergeSelectedTitle" disabled>⊞</button>
-            <button id="delete-selected-btn" class="icon-btn" data-i18n-title="deleteTitle">🗑</button>
+            <button id="add-box-btn" class="tool-btn" data-i18n-title="addBoxTitle">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+            </button>
+            <button id="merge-selected-btn" class="tool-btn" data-i18n-title="mergeSelectedTitle" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 8h7V3"/><path d="M21 16h-7v5"/><path d="M10 3L3 8"/><path d="M14 21l7-5"/></svg>
+            </button>
+            <button id="delete-selected-btn" class="tool-btn" data-i18n-title="deleteTitle">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg>
+            </button>
           </div>
         </div>
         <div id="element-list"></div>
@@ -34,7 +45,10 @@
       <!-- Center: Canvas area -->
       <div id="canvas-area">
         <div id="drop-zone">
-          <p data-i18n="dropZone"></p>
+          <div class="drop-zone-inner">
+            <svg class="drop-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+            <p data-i18n="dropZone"></p>
+          </div>
           <input type="file" id="file-input" accept="image/*" />
         </div>
         <canvas id="preview-canvas"></canvas>
@@ -48,17 +62,17 @@
         <div id="settings-section" class="panel-section">
           <h3 data-i18n="settings"></h3>
 
-          <!-- Background color -->
           <div class="control-group">
             <label data-i18n="bgColor"></label>
             <div id="bg-color-row">
               <div id="bg-color-swatch"></div>
               <input type="color" id="bg-color-picker" value="#00ff00" />
-              <button id="bg-eyedropper-btn" data-i18n-title="eyedropperTitle">🎯</button>
+              <button id="bg-eyedropper-btn" class="tool-btn" data-i18n-title="eyedropperTitle">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M2 22l1-1h3l9-9"/><path d="M13 6l3.5-3.5a2.12 2.12 0 013 3L16 9"/><path d="M10 9l5 5"/></svg>
+              </button>
             </div>
           </div>
 
-          <!-- Mode toggle -->
           <div class="control-group">
             <label data-i18n="keyingMode"></label>
             <div id="mode-toggle">
@@ -67,7 +81,6 @@
             </div>
           </div>
 
-          <!-- Gradient mode params (HSV keying) -->
           <div id="gradient-params" class="param-group">
             <div class="control-group">
               <label data-i18n-label="innerHue" data-i18n-suffix="°"><span id="inner-hue-val">15</span>°</label>
@@ -95,7 +108,6 @@
             </div>
           </div>
 
-          <!-- Threshold mode params -->
           <div id="threshold-params" class="param-group" style="display:none;">
             <div class="control-group">
               <label data-i18n-label="thresholdVal"><span id="thresh-val">50</span></label>
@@ -107,7 +119,6 @@
             </div>
           </div>
 
-          <!-- Element detection params -->
           <div class="control-group">
             <label data-i18n-label="minElementSize" data-i18n-suffix="px"><span id="min-size-val">15</span>px</label>
             <input type="range" id="min-element-size" min="1" max="100" value="15" />
@@ -117,24 +128,23 @@
             <input type="range" id="overlap-distance" min="0" max="50" value="12" />
           </div>
 
-          <button id="recalculate-btn" class="btn-primary" style="width:100%;margin-top:4px;" disabled data-i18n="recalculate"></button>
+          <button id="recalculate-btn" class="btn-accent" disabled data-i18n="recalculate"></button>
 
           <div class="config-actions">
-            <button id="save-config-btn" class="btn-secondary config-btn" data-i18n="saveConfig"></button>
-            <button id="load-config-btn" class="btn-secondary config-btn" data-i18n="loadConfig"></button>
+            <button id="save-config-btn" class="btn-subtle" data-i18n="saveConfig"></button>
+            <button id="load-config-btn" class="btn-subtle" data-i18n="loadConfig"></button>
             <input type="file" id="config-file-input" accept=".json" style="display:none;" />
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Bottom: Export bar -->
     <footer id="export-bar">
       <div class="control-group export-padding">
         <label data-i18n-label="padding" data-i18n-suffix="px"><span id="padding-val">5</span>px</label>
         <input type="range" id="export-padding" min="0" max="20" value="5" />
       </div>
-      <button id="export-all" class="btn-primary" disabled data-i18n="exportAll"></button>
+      <button id="export-all" class="btn-export" disabled data-i18n="exportAll"></button>
     </footer>
   </div>
 
