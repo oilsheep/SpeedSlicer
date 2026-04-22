@@ -675,6 +675,22 @@ function applyConfig(config) {
   }
 }
 
+// --- Load New Image ---
+
+document.getElementById('load-new-image-btn').addEventListener('click', () => {
+  fileInput.click();
+});
+
+// Also allow drag-and-drop on the entire canvas area even after an image is loaded
+document.getElementById('canvas-area').addEventListener('dragover', (e) => {
+  e.preventDefault();
+});
+document.getElementById('canvas-area').addEventListener('drop', (e) => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadImage(file);
+});
+
 // --- Window Resize ---
 window.addEventListener('resize', () => {
   if (ui.processedData) ui.render();

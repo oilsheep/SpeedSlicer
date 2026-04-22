@@ -18,10 +18,23 @@ body {
   padding: 8px 16px;
   background: #16213e;
   border-bottom: 1px solid #333;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 #header h1 {
   font-size: 16px;
   color: #e94560;
+  margin: 0;
+}
+#header-author {
+  font-size: 11px;
+  color: #666;
+}
+.header-btn {
+  margin-left: auto;
+  padding: 4px 12px !important;
+  font-size: 12px !important;
 }
 
 #main {
