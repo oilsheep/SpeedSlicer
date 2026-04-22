@@ -18,6 +18,7 @@ export default class UIController {
     this.overlaps = [];
     this.selectedElementId = null;
     this.checkedIds = new Set();
+    this.elementMap = null; // Int32Array pixel→elementId map
 
     // Interaction state
     this.eyedropperMode = false;

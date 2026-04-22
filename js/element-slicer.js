@@ -276,24 +276,36 @@ export default class ElementSlicer {
     }
 
     // Filter by minimum size and build result
+    // Also build a mapping from element id → set of CCL labels
     const elements = [];
+    const labelToId = new Map();
     let id = 1;
-    for (const [, b] of boxes) {
+    for (const [label, b] of boxes) {
       const w = b.maxX - b.minX + 1;
       const h = b.maxY - b.minY + 1;
       if (w >= minSize && h >= minSize) {
+        const elId = id++;
         elements.push({
-          id: id++,
+          id: elId,
           x: b.minX,
           y: b.minY,
           w,
           h,
           pixelCount: b.count,
         });
+        labelToId.set(label, elId);
       }
     }
 
-    return elements;
+    // Build element ID map: for each pixel, which element ID it belongs to (0 = none)
+    const elementMap = new Int32Array(width * height);
+    for (let i = 0; i < labels.length; i++) {
+      if (labels[i] > 0 && labelToId.has(labels[i])) {
+        elementMap[i] = labelToId.get(labels[i]);
+      }
+    }
+
+    return { elements, elementMap };
   }
 
   detectOverlaps(elements, distance = 5) {

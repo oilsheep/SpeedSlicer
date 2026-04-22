@@ -44,6 +44,7 @@ function saveUndoState() {
     overlaps: ui.overlaps.map(([a, b]) => [a, b]),
     checkedIds: new Set(ui.checkedIds),
     selectedElementId: ui.selectedElementId,
+    elementMap: ui.elementMap,
     nextElementId,
   });
   if (undoStack.length > MAX_UNDO) undoStack.shift();
@@ -56,6 +57,7 @@ function undo() {
   ui.overlaps = state.overlaps;
   ui.checkedIds = state.checkedIds;
   ui.selectedElementId = state.selectedElementId;
+  ui.elementMap = state.elementMap;
   nextElementId = state.nextElementId;
   ui.render();
   updateElementList();
@@ -111,7 +113,9 @@ async function loadImage(file) {
   ui.overlaps = [];
   ui.selectedElementId = null;
   ui.checkedIds = new Set();
+  ui.elementMap = null;
   nextElementId = 1;
+  undoStack.length = 0;
 
   // Let UI update before heavy processing
   await new Promise((r) => setTimeout(r, 50));
@@ -245,15 +249,14 @@ function processImage() {
   const processed = slicer.removeBackground(sourceData, bgColor, params);
   ui.processedData = processed;
 
-  let elements = slicer.findElements(processed, minSize);
-
-  // Auto-merge overlapping elements into larger boxes
-  elements = slicer.autoMergeOverlaps(elements, overlapDist);
+  const result = slicer.findElements(processed, minSize);
+  const elements = result.elements;
+  ui.elementMap = result.elementMap;
 
   nextElementId = elements.length > 0 ? Math.max(...elements.map((e) => e.id)) + 1 : 1;
   ui.elements = elements;
 
-  // Detect remaining overlaps (after auto-merge, these are between non-adjacent groups)
+  // Detect overlapping bounding boxes (for visual indicator only, no auto-merge)
   ui.overlaps = slicer.detectOverlaps(elements, overlapDist);
   ui.checkedIds = new Set(elements.map((e) => e.id));
 
@@ -375,18 +378,15 @@ function updateElementList() {
 
 function renderThumbnail(thumbCanvas, el) {
   if (!ui.processedData) return;
+  // Use getElementCanvas for accurate masked thumbnail
+  const elCanvas = getElementCanvas(el);
   const tctx = thumbCanvas.getContext('2d');
-  const srcCanvas = document.createElement('canvas');
-  srcCanvas.width = ui.processedData.width;
-  srcCanvas.height = ui.processedData.height;
-  srcCanvas.getContext('2d').putImageData(ui.processedData, 0, 0);
-
-  const scale = Math.min(32 / el.w, 32 / el.h);
-  const dw = el.w * scale;
-  const dh = el.h * scale;
+  const scale = Math.min(32 / elCanvas.width, 32 / elCanvas.height);
+  const dw = elCanvas.width * scale;
+  const dh = elCanvas.height * scale;
   const dx = (32 - dw) / 2;
   const dy = (32 - dh) / 2;
-  tctx.drawImage(srcCanvas, el.x, el.y, el.w, el.h, dx, dy, dw, dh);
+  tctx.drawImage(elCanvas, 0, 0, elCanvas.width, elCanvas.height, dx, dy, dw, dh);
 }
 
 // --- Context Menu ---
@@ -428,7 +428,15 @@ function showContextMenu(x, y, el) {
     mergeItem.textContent = `${t('mergeAction')} ${partnerName}`;
     mergeItem.addEventListener('click', () => {
       saveUndoState();
+      const mergedId = Math.min(el.id, partnerId);
+      const removedId = Math.max(el.id, partnerId);
       ui.elements = slicer.mergeElements(ui.elements, el.id, partnerId);
+      // Update element map: reassign removed ID pixels to merged ID
+      if (ui.elementMap) {
+        for (let i = 0; i < ui.elementMap.length; i++) {
+          if (ui.elementMap[i] === removedId) ui.elementMap[i] = mergedId;
+        }
+      }
       ui.overlaps = slicer.detectOverlaps(ui.elements, +document.getElementById('overlap-distance').value);
       ui.render();
       updateElementList();
@@ -491,12 +499,40 @@ function getElementCanvas(el) {
   outCanvas.height = el.h + padding * 2;
   const outCtx = outCanvas.getContext('2d');
 
-  const srcCanvas = document.createElement('canvas');
-  srcCanvas.width = ui.processedData.width;
-  srcCanvas.height = ui.processedData.height;
-  srcCanvas.getContext('2d').putImageData(ui.processedData, 0, 0);
+  const { width } = ui.processedData;
+  const srcData = ui.processedData.data;
+  const elementMap = ui.elementMap;
 
-  outCtx.drawImage(srcCanvas, el.x, el.y, el.w, el.h, padding, padding, el.w, el.h);
+  // Create masked ImageData: only include pixels belonging to this element
+  const masked = outCtx.createImageData(el.w, el.h);
+  const mData = masked.data;
+
+  for (let dy = 0; dy < el.h; dy++) {
+    for (let dx = 0; dx < el.w; dx++) {
+      const sx = el.x + dx;
+      const sy = el.y + dy;
+      const srcIdx = sy * width + sx;
+      const dstIdx = (dy * el.w + dx) * 4;
+      const srcPx = srcIdx * 4;
+
+      // Only copy pixels that belong to this element (or manually added boxes with no map)
+      if (!elementMap || elementMap[srcIdx] === el.id || el.pixelCount === 0) {
+        mData[dstIdx]     = srcData[srcPx];
+        mData[dstIdx + 1] = srcData[srcPx + 1];
+        mData[dstIdx + 2] = srcData[srcPx + 2];
+        mData[dstIdx + 3] = srcData[srcPx + 3];
+      }
+      // else: leave as transparent (0,0,0,0)
+    }
+  }
+
+  // Draw the masked data onto the output canvas with padding
+  const tmpCanvas = document.createElement('canvas');
+  tmpCanvas.width = el.w;
+  tmpCanvas.height = el.h;
+  tmpCanvas.getContext('2d').putImageData(masked, 0, 0);
+  outCtx.drawImage(tmpCanvas, padding, padding);
+
   return outCanvas;
 }
 
