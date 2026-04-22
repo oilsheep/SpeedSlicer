@@ -258,7 +258,7 @@ function processImage() {
 
   // Detect overlapping bounding boxes (for visual indicator only, no auto-merge)
   ui.overlaps = slicer.detectOverlaps(elements, overlapDist);
-  ui.checkedIds = new Set(elements.map((e) => e.id));
+  ui.checkedIds = new Set();
 
   ui.render();
   updateElementList();
@@ -460,7 +460,6 @@ ui.onNewBox = ({ x, y, w, h }) => {
   saveUndoState();
   const newEl = { id: nextElementId++, x, y, w, h, pixelCount: 0 };
   ui.elements.push(newEl);
-  ui.checkedIds.add(newEl.id);
   ui.overlaps = slicer.detectOverlaps(ui.elements, +document.getElementById('overlap-distance').value);
   ui.selectedElementId = newEl.id;
   ui.render();
@@ -485,6 +484,8 @@ function updateExportButtons() {
   document.getElementById('export-selected').disabled = ui.checkedIds.size === 0;
   document.getElementById('export-all').disabled = ui.elements.length === 0;
   document.getElementById('merge-selected-btn').disabled = ui.checkedIds.size < 2;
+  document.getElementById('delete-selected-btn').disabled =
+    ui.checkedIds.size === 0 && ui.selectedElementId == null;
 }
 
 function getElementCanvas(el) {
@@ -602,13 +603,22 @@ document.getElementById('add-box-btn').addEventListener('click', () => {
 });
 
 document.getElementById('delete-selected-btn').addEventListener('click', () => {
-  if (ui.selectedElementId == null) return;
+  // Delete checked elements, or the selected element if none checked
+  let idsToDelete;
+  if (ui.checkedIds.size > 0) {
+    idsToDelete = [...ui.checkedIds];
+  } else if (ui.selectedElementId != null) {
+    idsToDelete = [ui.selectedElementId];
+  } else {
+    return;
+  }
+
   saveUndoState();
-  const id = ui.selectedElementId;
-  ui.elements = ui.elements.filter((e) => e.id !== id);
-  ui.checkedIds.delete(id);
-  ui.overlaps = ui.overlaps.filter(([a, b]) => a !== id && b !== id);
-  ui.selectedElementId = null;
+  const deleteSet = new Set(idsToDelete);
+  ui.elements = ui.elements.filter((e) => !deleteSet.has(e.id));
+  for (const id of idsToDelete) ui.checkedIds.delete(id);
+  ui.overlaps = ui.overlaps.filter(([a, b]) => !deleteSet.has(a) && !deleteSet.has(b));
+  if (deleteSet.has(ui.selectedElementId)) ui.selectedElementId = null;
   ui.render();
   updateElementList();
   updateExportButtons();
@@ -656,7 +666,7 @@ document.getElementById('merge-selected-btn').addEventListener('click', () => {
     .concat(merged)
     .sort((a, b) => a.id - b.id);
 
-  ui.checkedIds = new Set(ui.elements.map((e) => e.id));
+  ui.checkedIds = new Set();
   ui.selectedElementId = mergedId;
   ui.overlaps = slicer.detectOverlaps(ui.elements, +document.getElementById('overlap-distance').value);
   ui.render();
@@ -676,15 +686,22 @@ window.addEventListener('keydown', (e) => {
 
   // Delete/Backspace: delete selected element
   if (e.key === 'Delete' || e.key === 'Backspace') {
-    // Don't trigger if typing in an input
     if (e.target.tagName === 'INPUT') return;
-    if (ui.selectedElementId == null) return;
+    // Delete checked, or selected if none checked
+    let idsToDelete;
+    if (ui.checkedIds.size > 0) {
+      idsToDelete = [...ui.checkedIds];
+    } else if (ui.selectedElementId != null) {
+      idsToDelete = [ui.selectedElementId];
+    } else {
+      return;
+    }
     saveUndoState();
-    const id = ui.selectedElementId;
-    ui.elements = ui.elements.filter((el) => el.id !== id);
-    ui.checkedIds.delete(id);
-    ui.overlaps = ui.overlaps.filter(([a, b]) => a !== id && b !== id);
-    ui.selectedElementId = null;
+    const deleteSet = new Set(idsToDelete);
+    ui.elements = ui.elements.filter((el) => !deleteSet.has(el.id));
+    for (const id of idsToDelete) ui.checkedIds.delete(id);
+    ui.overlaps = ui.overlaps.filter(([a, b]) => !deleteSet.has(a) && !deleteSet.has(b));
+    if (deleteSet.has(ui.selectedElementId)) ui.selectedElementId = null;
     ui.render();
     updateElementList();
     updateExportButtons();
