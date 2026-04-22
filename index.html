@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Green Key Elements</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Top bar -->
+    <header id="header">
+      <h1>Green Key Elements</h1>
+    </header>
+
+    <div id="main">
+      <!-- Left: Canvas area -->
+      <div id="canvas-area">
+        <div id="drop-zone">
+          <p>拖放圖片到這裡，或點擊選擇檔案</p>
+          <input type="file" id="file-input" accept="image/*" />
+        </div>
+        <canvas id="preview-canvas"></canvas>
+        <div id="canvas-controls">
+          <span id="zoom-level">100%</span>
+        </div>
+      </div>
+
+      <!-- Right: Control panel -->
+      <div id="panel">
+        <!-- Settings section -->
+        <div id="settings-section" class="panel-section">
+          <h3>設定</h3>
+
+          <!-- Background color -->
+          <div class="control-group">
+            <label>背景色</label>
+            <div id="bg-color-row">
+              <div id="bg-color-swatch"></div>
+              <input type="color" id="bg-color-picker" value="#00ff00" />
+              <button id="bg-eyedropper-btn" title="從圖片取色">🎯</button>
+            </div>
+          </div>
+
+          <!-- Mode toggle -->
+          <div class="control-group">
+            <label>去背模式</label>
+            <div id="mode-toggle">
+              <button id="mode-gradient" class="mode-btn active">漸變</button>
+              <button id="mode-threshold" class="mode-btn">閾值</button>
+            </div>
+          </div>
+
+          <!-- Gradient mode params -->
+          <div id="gradient-params" class="param-group">
+            <div class="control-group">
+              <label>內圈閾值 <span id="inner-val">30</span></label>
+              <input type="range" id="inner-threshold" min="0" max="255" value="30" />
+            </div>
+            <div class="control-group">
+              <label>外圈閾值 <span id="outer-val">80</span></label>
+              <input type="range" id="outer-threshold" min="0" max="255" value="80" />
+            </div>
+            <div class="control-group">
+              <label>抗鋸齒距離 <span id="gradient-aa-val">1</span>px</label>
+              <input type="range" id="gradient-aa-dist" min="0" max="5" value="1" />
+            </div>
+          </div>
+
+          <!-- Threshold mode params -->
+          <div id="threshold-params" class="param-group" style="display:none;">
+            <div class="control-group">
+              <label>閾值 <span id="thresh-val">50</span></label>
+              <input type="range" id="threshold-value" min="0" max="255" value="50" />
+            </div>
+            <div class="control-group">
+              <label>抗鋸齒距離 <span id="thresh-aa-val">1</span>px</label>
+              <input type="range" id="thresh-aa-dist" min="0" max="5" value="1" />
+            </div>
+          </div>
+
+          <!-- Element detection params -->
+          <div class="control-group">
+            <label>最小元件尺寸 <span id="min-size-val">10</span>px</label>
+            <input type="range" id="min-element-size" min="1" max="100" value="10" />
+          </div>
+          <div class="control-group">
+            <label>重疊偵測距離 <span id="overlap-dist-val">5</span>px</label>
+            <input type="range" id="overlap-distance" min="0" max="50" value="5" />
+          </div>
+        </div>
+
+        <!-- Element list section -->
+        <div id="elements-section" class="panel-section">
+          <h3>元件列表 (<span id="element-count">0</span>)</h3>
+          <div id="element-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom: Export bar -->
+    <footer id="export-bar">
+      <div class="control-group export-padding">
+        <label>Padding <span id="padding-val">0</span>px</label>
+        <input type="range" id="export-padding" min="0" max="20" value="0" />
+      </div>
+      <button id="export-selected" class="btn-primary" disabled>匯出選取的元件</button>
+      <button id="export-all" class="btn-secondary" disabled>全部匯出</button>
+    </footer>
+  </div>
+
+  <script src="lib/jszip.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
