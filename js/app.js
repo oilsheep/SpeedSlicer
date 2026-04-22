@@ -193,11 +193,12 @@ modeThreshold.addEventListener('click', () => {
 
 // --- Sliders ---
 
-function bindSlider(id, displayId, suffix = '') {
+function bindSlider(id, displayId) {
   const slider = document.getElementById(id);
-  const display = document.getElementById(displayId);
   slider.addEventListener('input', () => {
-    display.textContent = slider.value + suffix;
+    // Look up span fresh each time (it gets rebuilt by i18n)
+    const display = document.getElementById(displayId);
+    if (display) display.textContent = slider.value;
     debounceProcess();
   });
 }
@@ -769,12 +770,12 @@ function applyConfig(config) {
   }
 
   // Sliders
-  function setSlider(id, displayId, value, suffix = '') {
+  function setSlider(id, displayId, value) {
     const slider = document.getElementById(id);
     const display = document.getElementById(displayId);
     if (slider && value != null) {
       slider.value = value;
-      display.textContent = value + suffix;
+      if (display) display.textContent = value;
     }
   }
 

@@ -244,16 +244,24 @@ function applyTranslations() {
   });
 
   // Update labels with dynamic values (sliders)
+  // Structure: [textNode: "Label "] [span: value] [textNode: "suffix"]
   document.querySelectorAll('[data-i18n-label]').forEach((el) => {
     const key = el.dataset.i18nLabel;
-    const valSpan = el.querySelector('span');
     const suffix = el.dataset.i18nSuffix || '';
-    if (valSpan) {
-      el.childNodes[0].textContent = t(key) + ' ';
-      // Keep the span and suffix intact
-    } else {
+    const valSpan = el.querySelector('span');
+    if (!valSpan) {
       el.textContent = t(key);
+      return;
     }
+    const value = valSpan.textContent;
+    // Rebuild: label text + span + suffix
+    el.textContent = ''; // clear
+    el.appendChild(document.createTextNode(t(key) + ' '));
+    const newSpan = document.createElement('span');
+    newSpan.id = valSpan.id;
+    newSpan.textContent = value;
+    el.appendChild(newSpan);
+    el.appendChild(document.createTextNode(suffix));
   });
 
   // Update language selector display
