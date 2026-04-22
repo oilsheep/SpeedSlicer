@@ -470,7 +470,6 @@ ui.onBeforeDrag = () => saveUndoState();
 // --- Export ---
 
 function updateExportButtons() {
-  document.getElementById('export-selected').disabled = ui.selectedIds.size === 0;
   document.getElementById('export-all').disabled = ui.elements.length === 0;
   document.getElementById('merge-selected-btn').disabled = ui.selectedIds.size < 2;
   document.getElementById('delete-selected-btn').disabled = ui.selectedIds.size === 0;
@@ -531,15 +530,6 @@ function downloadElement(el) {
     URL.revokeObjectURL(a.href);
   }, 'image/png');
 }
-
-document.getElementById('export-selected').addEventListener('click', async () => {
-  const selected = ui.elements.filter((e) => ui.selectedIds.has(e.id));
-  if (selected.length === 1) {
-    downloadElement(selected[0]);
-    return;
-  }
-  await exportAsZip(selected);
-});
 
 document.getElementById('export-all').addEventListener('click', async () => {
   await exportAsZip(ui.elements);
