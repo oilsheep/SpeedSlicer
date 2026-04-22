@@ -42,12 +42,18 @@ fileInput.addEventListener('change', (e) => {
 });
 
 async function loadImage(file) {
+  const canvasArea = document.getElementById('canvas-area');
+  canvasArea.classList.add('loading');
+
   // Reset state
   ui.elements = [];
   ui.overlaps = [];
   ui.selectedElementId = null;
   ui.checkedIds = new Set();
   nextElementId = 1;
+
+  // Let UI update before heavy processing
+  await new Promise((r) => setTimeout(r, 50));
 
   const result = await loader.loadFile(file);
   dropZone.classList.add('hidden');
@@ -61,6 +67,8 @@ async function loadImage(file) {
   // Fit image and process
   ui.fitToView(result.width, result.height);
   processImage();
+
+  canvasArea.classList.remove('loading');
 }
 
 // --- Background Color ---
