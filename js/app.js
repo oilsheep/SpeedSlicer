@@ -296,8 +296,8 @@ function updateElementList() {
     const thumbDiv = document.createElement('div');
     thumbDiv.className = 'thumb';
     const thumbCanvas = document.createElement('canvas');
-    thumbCanvas.width = 32;
-    thumbCanvas.height = 32;
+    thumbCanvas.width = 48;
+    thumbCanvas.height = 48;
     renderThumbnail(thumbCanvas, el);
     thumbDiv.appendChild(thumbCanvas);
 
@@ -381,11 +381,11 @@ function renderThumbnail(thumbCanvas, el) {
   // Use getElementCanvas for accurate masked thumbnail
   const elCanvas = getElementCanvas(el);
   const tctx = thumbCanvas.getContext('2d');
-  const scale = Math.min(32 / elCanvas.width, 32 / elCanvas.height);
+  const scale = Math.min(48 / elCanvas.width, 48 / elCanvas.height);
   const dw = elCanvas.width * scale;
   const dh = elCanvas.height * scale;
-  const dx = (32 - dw) / 2;
-  const dy = (32 - dh) / 2;
+  const dx = (48 - dw) / 2;
+  const dy = (48 - dh) / 2;
   tctx.drawImage(elCanvas, 0, 0, elCanvas.width, elCanvas.height, dx, dy, dw, dh);
 }
 
@@ -490,6 +490,7 @@ ui.onBeforeDrag = () => saveUndoState();
 function updateExportButtons() {
   document.getElementById('export-selected').disabled = ui.checkedIds.size === 0;
   document.getElementById('export-all').disabled = ui.elements.length === 0;
+  document.getElementById('merge-selected-btn').disabled = ui.checkedIds.size < 2;
 }
 
 function getElementCanvas(el) {
@@ -614,6 +615,56 @@ document.getElementById('delete-selected-btn').addEventListener('click', () => {
   ui.checkedIds.delete(id);
   ui.overlaps = ui.overlaps.filter(([a, b]) => a !== id && b !== id);
   ui.selectedElementId = null;
+  ui.render();
+  updateElementList();
+  updateExportButtons();
+});
+
+// --- Merge Selected Elements ---
+
+document.getElementById('merge-selected-btn').addEventListener('click', () => {
+  if (ui.checkedIds.size < 2) return;
+  saveUndoState();
+
+  const ids = [...ui.checkedIds];
+  const toMerge = ui.elements.filter((e) => ids.includes(e.id));
+  if (toMerge.length < 2) return;
+
+  // Compute merged bounding box
+  const minX = Math.min(...toMerge.map((e) => e.x));
+  const minY = Math.min(...toMerge.map((e) => e.y));
+  const maxX = Math.max(...toMerge.map((e) => e.x + e.w));
+  const maxY = Math.max(...toMerge.map((e) => e.y + e.h));
+  const mergedId = Math.min(...ids);
+
+  const merged = {
+    id: mergedId,
+    name: toMerge.find((e) => e.name)?.name,
+    x: minX,
+    y: minY,
+    w: maxX - minX,
+    h: maxY - minY,
+    pixelCount: toMerge.reduce((s, e) => s + e.pixelCount, 0),
+  };
+
+  // Update elementMap: reassign all merged IDs to the merged ID
+  if (ui.elementMap) {
+    for (let i = 0; i < ui.elementMap.length; i++) {
+      if (ids.includes(ui.elementMap[i])) {
+        ui.elementMap[i] = mergedId;
+      }
+    }
+  }
+
+  // Replace elements
+  ui.elements = ui.elements
+    .filter((e) => !ids.includes(e.id))
+    .concat(merged)
+    .sort((a, b) => a.id - b.id);
+
+  ui.checkedIds = new Set(ui.elements.map((e) => e.id));
+  ui.selectedElementId = mergedId;
+  ui.overlaps = slicer.detectOverlaps(ui.elements, +document.getElementById('overlap-distance').value);
   ui.render();
   updateElementList();
   updateExportButtons();

@@ -18,7 +18,20 @@
     </header>
 
     <div id="main">
-      <!-- Left: Canvas area -->
+      <!-- Left: Element list panel -->
+      <div id="elements-panel">
+        <div class="element-list-header">
+          <h3><span data-i18n="elementList"></span> (<span id="element-count">0</span>)</h3>
+          <div class="element-list-actions">
+            <button id="add-box-btn" class="icon-btn" data-i18n-title="addBoxTitle">+</button>
+            <button id="merge-selected-btn" class="icon-btn" data-i18n-title="mergeSelectedTitle" disabled>⊞</button>
+            <button id="delete-selected-btn" class="icon-btn" data-i18n-title="deleteTitle">🗑</button>
+          </div>
+        </div>
+        <div id="element-list"></div>
+      </div>
+
+      <!-- Center: Canvas area -->
       <div id="canvas-area">
         <div id="drop-zone">
           <p data-i18n="dropZone"></p>
@@ -30,9 +43,8 @@
         </div>
       </div>
 
-      <!-- Right: Control panel -->
+      <!-- Right: Settings panel -->
       <div id="panel">
-        <!-- Settings section -->
         <div id="settings-section" class="panel-section">
           <h3 data-i18n="settings"></h3>
 
@@ -112,18 +124,6 @@
             <button id="load-config-btn" class="btn-secondary config-btn" data-i18n="loadConfig"></button>
             <input type="file" id="config-file-input" accept=".json" style="display:none;" />
           </div>
-        </div>
-
-        <!-- Element list section -->
-        <div id="elements-section" class="panel-section">
-          <div class="element-list-header">
-            <h3><span data-i18n="elementList"></span> (<span id="element-count">0</span>)</h3>
-            <div class="element-list-actions">
-              <button id="add-box-btn" class="icon-btn" data-i18n-title="addBoxTitle">+</button>
-              <button id="delete-selected-btn" class="icon-btn" data-i18n-title="deleteTitle">🗑</button>
-            </div>
-          </div>
-          <div id="element-list"></div>
         </div>
       </div>
     </div>
