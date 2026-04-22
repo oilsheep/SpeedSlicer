@@ -343,20 +343,43 @@ export default class UIController {
     tmpCanvas.getContext('2d').putImageData(this.processedData, 0, 0);
     ctx.drawImage(tmpCanvas, 0, 0);
 
-    // Draw element bounding boxes
-    const overlapIds = new Set();
-    for (const [a, b] of this.overlaps) {
-      overlapIds.add(a);
-      overlapIds.add(b);
+    // Draw element mask overlay: tint each element's pixels with a unique color
+    if (this.elementMap && this.elements.length > 0) {
+      const maskCanvas = document.createElement('canvas');
+      maskCanvas.width = width;
+      maskCanvas.height = height;
+      const maskCtx = maskCanvas.getContext('2d');
+      const maskData = maskCtx.createImageData(width, height);
+      const md = maskData.data;
+
+      // Assign a color per element ID
+      const colors = [
+        [79, 195, 247], [233, 69, 96], [76, 175, 80], [255, 183, 77],
+        [186, 104, 200], [255, 138, 101], [77, 208, 225], [255, 213, 79],
+        [129, 199, 132], [240, 98, 146], [100, 181, 246], [255, 167, 38],
+      ];
+
+      for (let i = 0; i < this.elementMap.length; i++) {
+        const elId = this.elementMap[i];
+        if (elId === 0) continue;
+        const c = colors[(elId - 1) % colors.length];
+        const pi = i * 4;
+        const isSelected = elId === this.selectedElementId;
+        const alpha = isSelected ? 90 : 40;
+        md[pi] = c[0]; md[pi + 1] = c[1]; md[pi + 2] = c[2]; md[pi + 3] = alpha;
+      }
+
+      maskCtx.putImageData(maskData, 0, 0);
+      ctx.drawImage(maskCanvas, 0, 0);
     }
 
+    // Draw element bounding boxes
     for (const el of this.elements) {
       const isSelected = el.id === this.selectedElementId;
-      const isOverlap = overlapIds.has(el.id);
 
-      ctx.strokeStyle = isSelected ? '#e94560' : isOverlap ? '#f0a500' : '#4fc3f7';
+      ctx.strokeStyle = isSelected ? '#e94560' : '#4fc3f7';
       ctx.lineWidth = (isSelected ? 2 : 1) / this.zoom;
-      ctx.setLineDash(isOverlap ? [4 / this.zoom, 4 / this.zoom] : []);
+      ctx.setLineDash([]);
       ctx.strokeRect(el.x, el.y, el.w, el.h);
 
       if (isSelected) {
@@ -370,7 +393,6 @@ export default class UIController {
         }
       }
 
-      ctx.setLineDash([]);
       const fontSize = Math.max(10, 12 / this.zoom);
       ctx.font = `${fontSize}px sans-serif`;
       ctx.fillStyle = 'rgba(0,0,0,0.6)';

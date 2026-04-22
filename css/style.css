@@ -234,7 +234,6 @@ body {
 .element-item:hover { border-color: #555; }
 .element-item.selected { border-color: #e94560; background: #1a2a5e; }
 .element-item.checked-for-merge { border-color: #4caf50; background: #1a3a2e; }
-.element-item.overlap { border-color: #f0a500; }
 
 .element-item input[type="checkbox"] {
   accent-color: #e94560;

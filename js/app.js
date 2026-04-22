@@ -278,17 +278,11 @@ function updateElementList() {
   count.textContent = ui.elements.length;
 
   list.innerHTML = '';
-  const overlapIds = new Set();
-  for (const [a, b] of ui.overlaps) {
-    overlapIds.add(a);
-    overlapIds.add(b);
-  }
 
   for (const el of ui.elements) {
     const item = document.createElement('div');
     item.className = 'element-item';
     if (el.id === ui.selectedElementId) item.classList.add('selected');
-    if (overlapIds.has(el.id)) item.classList.add('overlap');
 
     const name = el.name || `element_${String(el.id).padStart(3, '0')}`;
 
