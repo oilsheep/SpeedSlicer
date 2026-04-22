@@ -1,0 +1,82 @@
+<h2>UI 介面佈局方案</h2>
+<p class="subtitle">哪種佈局比較適合這個工具？</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1a1a2e;border-radius:8px;padding:16px;font-family:monospace;font-size:11px;color:#ccc;">
+        <div style="background:#16213e;padding:8px;margin-bottom:8px;border-radius:4px;text-align:center;color:#e94560;">Green Key Elements</div>
+        <div style="display:flex;gap:8px;height:220px;">
+          <div style="flex:1;background:#0f3460;border-radius:4px;display:flex;align-items:center;justify-content:center;position:relative;">
+            <div style="position:absolute;top:4px;left:4px;font-size:9px;color:#888;">Canvas 預覽區</div>
+            <div style="width:60%;height:60%;background:repeating-conic-gradient(#333 0% 25%, #222 0% 50%) 0 0/16px 16px;border-radius:4px;display:flex;align-items:center;justify-content:center;">
+              <span style="color:#e94560;font-size:20px;">🖼</span>
+            </div>
+            <div style="position:absolute;bottom:4px;right:4px;font-size:9px;color:#888;">縮放: 100%</div>
+          </div>
+          <div style="width:200px;background:#16213e;border-radius:4px;padding:8px;overflow:hidden;">
+            <div style="font-size:10px;color:#e94560;margin-bottom:6px;">⚙ 控制面板</div>
+            <div style="background:#0f3460;padding:4px 6px;border-radius:3px;margin-bottom:4px;font-size:9px;">背景色: <span style="display:inline-block;width:10px;height:10px;background:#00ff00;border-radius:2px;vertical-align:middle;"></span> #00FF00</div>
+            <div style="background:#0f3460;padding:4px 6px;border-radius:3px;margin-bottom:4px;font-size:9px;">模式: ◉ 漸變 ○ 閾值</div>
+            <div style="background:#0f3460;padding:4px 6px;border-radius:3px;margin-bottom:4px;font-size:9px;">容差: ━━━●━━ 30</div>
+            <div style="background:#0f3460;padding:4px 6px;border-radius:3px;margin-bottom:4px;font-size:9px;">抗鋸齒: ━●━━━━ 1px</div>
+            <div style="background:#0f3460;padding:4px 6px;border-radius:3px;margin-bottom:4px;font-size:9px;">最小尺寸: 10x10</div>
+            <hr style="border-color:#333;margin:6px 0;">
+            <div style="font-size:10px;color:#e94560;margin-bottom:6px;">📦 元件列表</div>
+            <div style="background:#0f3460;padding:3px 6px;border-radius:3px;margin-bottom:2px;font-size:9px;">☑ element_001</div>
+            <div style="background:#0f3460;padding:3px 6px;border-radius:3px;margin-bottom:2px;font-size:9px;">☑ element_002</div>
+            <div style="background:#0f3460;padding:3px 6px;border-radius:3px;margin-bottom:2px;font-size:9px;">☑ element_003</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <div style="flex:1;background:#e94560;padding:6px;border-radius:4px;text-align:center;color:white;font-size:10px;">匯出選取的元件</div>
+          <div style="background:#16213e;padding:6px 12px;border-radius:4px;text-align:center;font-size:10px;">全部匯出</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A. 左大右小</h3>
+      <p>左側大畫布預覽 + 右側控制面板。經典圖片編輯器佈局，畫布空間最大化。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image">
+      <div style="background:#1a1a2e;border-radius:8px;padding:16px;font-family:monospace;font-size:11px;color:#ccc;">
+        <div style="background:#16213e;padding:8px;margin-bottom:8px;border-radius:4px;text-align:center;color:#e94560;">Green Key Elements</div>
+        <div style="display:flex;gap:8px;">
+          <div style="width:100%;background:#16213e;border-radius:4px;padding:8px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;">
+            <div style="font-size:9px;">背景色: <span style="display:inline-block;width:10px;height:10px;background:#00ff00;border-radius:2px;vertical-align:middle;"></span></div>
+            <div style="font-size:9px;">模式: ◉ 漸變 ○ 閾值</div>
+            <div style="font-size:9px;">容差: ━━●━━ 30</div>
+            <div style="font-size:9px;">抗鋸齒: ━●━━ 1px</div>
+            <div style="font-size:9px;">最小: 10px</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;height:180px;">
+          <div style="flex:1;background:#0f3460;border-radius:4px;display:flex;align-items:center;justify-content:center;">
+            <div style="width:70%;height:70%;background:repeating-conic-gradient(#333 0% 25%, #222 0% 50%) 0 0/16px 16px;border-radius:4px;display:flex;align-items:center;justify-content:center;">
+              <span style="color:#e94560;font-size:20px;">🖼</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:8px;background:#16213e;border-radius:4px;padding:8px;">
+          <div style="font-size:10px;color:#e94560;margin-bottom:4px;">📦 偵測到的元件</div>
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+            <div style="background:#0f3460;padding:3px 8px;border-radius:3px;font-size:9px;">element_001</div>
+            <div style="background:#0f3460;padding:3px 8px;border-radius:3px;font-size:9px;">element_002</div>
+            <div style="background:#0f3460;padding:3px 8px;border-radius:3px;font-size:9px;">element_003</div>
+            <div style="background:#0f3460;padding:3px 8px;border-radius:3px;font-size:9px;">element_004</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <div style="flex:1;background:#e94560;padding:6px;border-radius:4px;text-align:center;color:white;font-size:10px;">匯出</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B. 上中下三段</h3>
+      <p>頂部工具列 + 中間畫布 + 底部元件列表。垂直流程，適合寬螢幕。但控制面板空間有限。</p>
+    </div>
+  </div>
+</div>

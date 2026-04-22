@@ -88,11 +88,19 @@
             <label>重疊偵測距離 <span id="overlap-dist-val">12</span>px</label>
             <input type="range" id="overlap-distance" min="0" max="50" value="12" />
           </div>
+
+          <button id="recalculate-btn" class="btn-primary" style="width:100%;margin-top:4px;" disabled>重新計算</button>
         </div>
 
         <!-- Element list section -->
         <div id="elements-section" class="panel-section">
-          <h3>元件列表 (<span id="element-count">0</span>)</h3>
+          <div class="element-list-header">
+            <h3>元件列表 (<span id="element-count">0</span>)</h3>
+            <div class="element-list-actions">
+              <button id="add-box-btn" class="icon-btn" title="新增切圖框 (Shift+拖拽)">+</button>
+              <button id="delete-selected-btn" class="icon-btn" title="刪除選取的元件 (Delete)">🗑</button>
+            </div>
+          </div>
           <div id="element-list"></div>
         </div>
       </div>

@@ -15,6 +15,48 @@ let bgColor = { r: 0, g: 255, b: 0 };
 let nextElementId = 1;
 let debounceTimer = null;
 
+// --- Undo System ---
+const undoStack = [];
+const MAX_UNDO = 50;
+
+function saveUndoState() {
+  undoStack.push({
+    elements: ui.elements.map((e) => ({ ...e })),
+    overlaps: ui.overlaps.map(([a, b]) => [a, b]),
+    checkedIds: new Set(ui.checkedIds),
+    selectedElementId: ui.selectedElementId,
+    nextElementId,
+  });
+  if (undoStack.length > MAX_UNDO) undoStack.shift();
+}
+
+function undo() {
+  if (undoStack.length === 0) return;
+  const state = undoStack.pop();
+  ui.elements = state.elements;
+  ui.overlaps = state.overlaps;
+  ui.checkedIds = state.checkedIds;
+  ui.selectedElementId = state.selectedElementId;
+  nextElementId = state.nextElementId;
+  ui.render();
+  updateElementList();
+  updateExportButtons();
+  showUndoIndicator();
+}
+
+function showUndoIndicator() {
+  let indicator = document.getElementById('undo-indicator');
+  if (!indicator) {
+    indicator = document.createElement('div');
+    indicator.id = 'undo-indicator';
+    document.body.appendChild(indicator);
+  }
+  indicator.textContent = `復原 (剩餘 ${undoStack.length} 步)`;
+  indicator.classList.add('show');
+  clearTimeout(indicator._timer);
+  indicator._timer = setTimeout(() => indicator.classList.remove('show'), 1200);
+}
+
 // --- File Loading ---
 
 const dropZone = document.getElementById('drop-zone');
@@ -67,6 +109,7 @@ async function loadImage(file) {
   // Fit image and process
   ui.fitToView(result.width, result.height);
   processImage();
+  document.getElementById('recalculate-btn').disabled = false;
 
   canvasArea.classList.remove('loading');
 }
@@ -328,6 +371,7 @@ function showContextMenu(x, y, el) {
   deleteItem.className = 'context-menu-item';
   deleteItem.textContent = '刪除';
   deleteItem.addEventListener('click', () => {
+    saveUndoState();
     ui.elements = ui.elements.filter((e) => e.id !== el.id);
     ui.checkedIds.delete(el.id);
     ui.overlaps = ui.overlaps.filter(([a, b]) => a !== el.id && b !== el.id);
@@ -350,6 +394,7 @@ function showContextMenu(x, y, el) {
     const partnerName = partnerEl?.name || `element_${String(partnerId).padStart(3, '0')}`;
     mergeItem.textContent = `合併 ${partnerName}`;
     mergeItem.addEventListener('click', () => {
+      saveUndoState();
       ui.elements = slicer.mergeElements(ui.elements, el.id, partnerId);
       ui.overlaps = slicer.detectOverlaps(ui.elements, +document.getElementById('overlap-distance').value);
       ui.render();
@@ -377,6 +422,7 @@ function removeContextMenu() {
 // --- New Box from Canvas ---
 
 ui.onNewBox = ({ x, y, w, h }) => {
+  saveUndoState();
   const newEl = { id: nextElementId++, x, y, w, h, pixelCount: 0 };
   ui.elements.push(newEl);
   ui.checkedIds.add(newEl.id);
@@ -394,6 +440,9 @@ ui.onElementSelect = (id) => {
 ui.onElementsChanged = () => {
   updateElementList();
 };
+
+// Save undo state before drag/resize starts
+ui.onBeforeDrag = () => saveUndoState();
 
 // --- Export ---
 
@@ -468,6 +517,77 @@ async function exportAsZip(elements) {
   a.click();
   URL.revokeObjectURL(a.href);
 }
+
+// --- Recalculate Button ---
+
+document.getElementById('recalculate-btn').addEventListener('click', () => {
+  saveUndoState();
+  processImage();
+});
+
+// Enable recalculate button when image is loaded
+const _origProcessImage = processImage;
+
+// --- Add / Delete Buttons ---
+
+document.getElementById('add-box-btn').addEventListener('click', () => {
+  ui.addBoxMode = true;
+  ui.canvas.className = ui.canvas.className.replace(/cursor-\S+/g, '').trim();
+  if (ui.processedData) ui.canvas.classList.add('active');
+  ui.canvas.classList.add('cursor-add-box');
+});
+
+document.getElementById('delete-selected-btn').addEventListener('click', () => {
+  if (ui.selectedElementId == null) return;
+  saveUndoState();
+  const id = ui.selectedElementId;
+  ui.elements = ui.elements.filter((e) => e.id !== id);
+  ui.checkedIds.delete(id);
+  ui.overlaps = ui.overlaps.filter(([a, b]) => a !== id && b !== id);
+  ui.selectedElementId = null;
+  ui.render();
+  updateElementList();
+  updateExportButtons();
+});
+
+// --- Keyboard Shortcuts ---
+
+window.addEventListener('keydown', (e) => {
+  // Ctrl+Z: Undo
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+    e.preventDefault();
+    undo();
+    return;
+  }
+
+  // Delete/Backspace: delete selected element
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    // Don't trigger if typing in an input
+    if (e.target.tagName === 'INPUT') return;
+    if (ui.selectedElementId == null) return;
+    saveUndoState();
+    const id = ui.selectedElementId;
+    ui.elements = ui.elements.filter((el) => el.id !== id);
+    ui.checkedIds.delete(id);
+    ui.overlaps = ui.overlaps.filter(([a, b]) => a !== id && b !== id);
+    ui.selectedElementId = null;
+    ui.render();
+    updateElementList();
+    updateExportButtons();
+    return;
+  }
+
+  // Escape: deselect / exit modes
+  if (e.key === 'Escape') {
+    ui.selectedElementId = null;
+    ui.eyedropperMode = false;
+    ui.addBoxMode = false;
+    bgEyedropper.classList.remove('active');
+    ui.render();
+    updateElementList();
+    return;
+  }
+});
 
 // --- Window Resize ---
 window.addEventListener('resize', () => {

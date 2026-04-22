@@ -21,6 +21,7 @@ export default class UIController {
 
     // Interaction state
     this.eyedropperMode = false;
+    this.addBoxMode = false;
     this.drawingBox = null;
     this.draggingElement = null;
     this.resizingElement = null;
@@ -77,13 +78,17 @@ export default class UIController {
 
     const handle = this._hitTestHandle(imgPos.x, imgPos.y);
     if (handle) {
+      if (this.onBeforeDrag) this.onBeforeDrag();
       this.resizingElement = handle;
+      const cls = (handle.handle === 'nw' || handle.handle === 'se') ? 'cursor-nwse' : 'cursor-nesw';
+      this.canvas.classList.add(cls);
       return;
     }
 
     const hitEl = this._hitTestElement(imgPos.x, imgPos.y);
     if (hitEl) {
       if (e.button === 0) {
+        if (this.onBeforeDrag) this.onBeforeDrag();
         this.selectedElementId = hitEl.id;
         this.draggingElement = {
           id: hitEl.id,
@@ -96,7 +101,7 @@ export default class UIController {
       return;
     }
 
-    if (e.shiftKey) {
+    if (e.shiftKey || this.addBoxMode) {
       this.drawingBox = {
         startX: imgPos.x, startY: imgPos.y,
         endX: imgPos.x, endY: imgPos.y,
@@ -145,6 +150,48 @@ export default class UIController {
       this.render();
       return;
     }
+
+    // Update cursor based on hover position
+    this._updateCursor(e);
+  }
+
+  _updateCursor(e) {
+    const c = this.canvas;
+    // Remove all cursor classes
+    c.className = c.className.replace(/cursor-\S+/g, '').trim();
+    if (this.processedData) c.classList.add('active');
+
+    if (this.eyedropperMode) {
+      c.classList.add('cursor-eyedropper');
+      return;
+    }
+    if (this.addBoxMode) {
+      c.classList.add('cursor-add-box');
+      return;
+    }
+
+    const imgPos = this.screenToImage(e.clientX, e.clientY);
+
+    // Check resize handles first
+    const handle = this._hitTestHandle(imgPos.x, imgPos.y);
+    if (handle) {
+      if (handle.handle === 'nw' || handle.handle === 'se') {
+        c.classList.add('cursor-nwse');
+      } else {
+        c.classList.add('cursor-nesw');
+      }
+      return;
+    }
+
+    // Check element hit for move cursor
+    const hitEl = this._hitTestElement(imgPos.x, imgPos.y);
+    if (hitEl) {
+      c.classList.add('cursor-move');
+      return;
+    }
+
+    // Default: grab for panning
+    // (handled by base CSS rule)
   }
 
   _onMouseUp(e) {
@@ -169,6 +216,7 @@ export default class UIController {
     if (this.drawingBox) {
       const box = this.drawingBox;
       this.drawingBox = null;
+      this.addBoxMode = false;
       const x = Math.min(box.startX, box.endX);
       const y = Math.min(box.startY, box.endY);
       const w = Math.abs(box.endX - box.startX);
