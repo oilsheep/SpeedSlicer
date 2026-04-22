@@ -1,109 +1,79 @@
 # SpeedSlicer
 
-A browser-based tool for extracting UI elements from game sprite sheets with solid-color backgrounds. No installation required — just open `index.html` in your browser.
+**Instantly extract every UI element from a sprite sheet. Drop an image, get transparent PNGs.**
 
-![SpeedSlicer](samples/sample-dark-ui.png)
+No installation. No server. Just open `index.html` and start slicing.
 
-## Features
+---
 
-- **Auto background detection** — Samples the four corners of the image to detect the background color
-- **HSV hue-based keying** — Professional-grade chroma keying that targets the background hue without damaging whites, grays, or dark elements
-- **Despill** — Removes color contamination from edges (green fringing, blue spill, etc.)
-- **Auto element detection** — Connected Component Labeling automatically finds and boxes each UI element
-- **Auto-merge overlapping boxes** — Nearby elements are merged into larger boxes to avoid fragmentation
-- **Interactive preview** — Zoom, pan, drag/resize boxes, add new boxes, delete unwanted ones
-- **Batch export** — Export individual PNGs or download all as a ZIP file
-- **Undo (Ctrl+Z)** — Up to 50 steps of undo history
-- **Save/Load settings** — Export and import your parameter presets as JSON
+### Input
+![Input sprite sheet](samples/input.png)
 
-## Quick Start
+### SpeedSlicer at work
+![SpeedSlicer screenshot](samples/screenshot.png)
 
-1. Open `index.html` in a modern browser (Chrome, Edge, Firefox)
-2. Drag & drop your sprite sheet onto the canvas (or click to select a file)
-3. The tool automatically detects the background color and extracts elements
-4. Adjust parameters if needed, then export
+### Output
+81 individual transparent PNGs, exported in one click. ([Download sample output](samples/output-elements.zip))
 
-## How It Works
+---
 
-### Step 1: Load Image
+## Why SpeedSlicer?
 
-Drag and drop an image with UI elements on a solid-color background (green, blue, or any color). The tool auto-detects the background color from the corner pixels.
+Game artists and developers constantly deal with sprite sheets — dozens of UI elements packed onto a single colored background. Manually cutting each one in Photoshop is tedious and slow.
 
-### Step 2: Background Removal (HSV Keying)
+**SpeedSlicer automates the entire process:**
 
-The tool converts each pixel to HSV color space and compares its **hue** against the detected background hue:
+1. **Drop** your sprite sheet
+2. **Background is removed** automatically using professional HSV chroma keying
+3. **Every element is detected** and individually boxed
+4. **Export** all elements as transparent PNGs in a single ZIP
 
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| Hue Inner | Hue angle within this range = fully transparent | 15° |
-| Hue Outer | Hue angle beyond this range = fully opaque | 40° |
-| Saturation Guard | Low-saturation pixels (whites/grays) are protected | 15% |
-| Value Guard | Dark pixels (blacks/shadows) are protected | 10% |
-| Despill Strength | How aggressively to remove background color bleed from edges | 100% |
-| Anti-alias Distance | Smooth edge transitions | 3px |
+What used to take 30+ minutes now takes seconds.
 
-**Why HSV instead of RGB?**  
-RGB distance treats all channels equally, so a white pixel and a light-green pixel can have similar distances from green. HSV separates *hue* (color) from *saturation* (intensity) and *value* (brightness), allowing precise targeting of the background color without damaging non-green content.
+## Key Features
 
-### Step 3: Element Detection
+| Feature | Description |
+|---------|-------------|
+| **Auto background detection** | Samples corner pixels to find the key color |
+| **HSV chroma keying** | Targets hue precisely — whites, grays, and darks stay intact |
+| **Despill** | Removes color bleeding from edges (no more green fringing) |
+| **Pixel-mask export** | Overlapping bounding boxes? Each PNG only contains its own pixels |
+| **Shift+click multi-select** | Photoshop-style selection for batch merge or delete |
+| **Ctrl+Z undo** | Up to 50 steps |
+| **i18n** | Auto-detects language: English, 繁體中文, 简体中文, 日本語, 한국어 |
+| **Save/Load config** | Export your settings as JSON, reuse across sessions |
+| **Zero dependencies** | Pure HTML/JS/CSS. No npm, no build, no server |
 
-After background removal, the tool uses **Connected Component Labeling (CCL)** — a two-pass algorithm with Union-Find — to identify groups of connected non-transparent pixels. Each group gets a bounding box.
+## How to Use
 
-Overlapping or very close bounding boxes are automatically merged using a configurable distance threshold.
+**Open** `index.html` in Chrome, Edge, or Firefox.
 
-### Step 4: Preview & Adjust
+**Load image** — drag & drop or click "Load Image" in the top bar.
 
-- **Zoom**: Mouse scroll wheel
-- **Pan**: Click and drag on empty space
-- **Select**: Click on a bounding box
-- **Move**: Drag a selected box
-- **Resize**: Drag corner handles
-- **Add new box**: Click the `+` button, or Shift + drag
-- **Delete**: Select a box and press `Delete`, or right-click > delete
-- **Merge**: Right-click on overlapping boxes to merge manually
-- **Undo**: `Ctrl+Z` (up to 50 steps)
+**Adjust if needed** — tweak the right panel sliders:
+- *Hue Inner/Outer* — how aggressively to key the background
+- *Saturation/Value Guard* — protect whites and darks from being keyed
+- *Despill Strength* — remove edge color contamination
+- *Min Element Size* — filter out noise
 
-### Step 5: Export
+**Edit elements** — on the canvas:
+- Click to select, Shift+click for multi-select
+- Drag to move, corner handles to resize
+- `+` button or Shift+drag on empty space to add a box
+- Delete key to remove selected elements
+- Merge button to combine selected elements
 
-- Click an individual download button to export a single element as PNG
-- "Export Selected" exports checked elements as a ZIP
-- "Export All" exports everything as a ZIP
-- Adjustable padding around each exported element
-
-## Samples
-
-Example input images are included in the `samples/` folder:
-
-| File | Description |
-|------|-------------|
-| `sample-dark-ui.png` | Dark-themed game UI with icons, panels, progress bars, badges, and character art on green screen |
-| `sample-knight-ui.png` | Blue knight-themed UI with character portrait, panels, icons, and decorative frames on green screen |
+**Export** — click the export button. Get a ZIP containing:
+- `_full_transparent.png` — the entire image with background removed
+- Individual PNGs for every detected element
 
 ## Tech Stack
 
-- **Pure frontend** — HTML + CSS + Vanilla JavaScript, no build tools
-- **Canvas 2D API** — Pixel-level image processing with `getImageData`
-- **JSZip** — Client-side ZIP file generation for batch export
-- **Zero dependencies** — No npm, no frameworks, just open the HTML file
+Pure frontend. No build tools. No frameworks.
 
-## File Structure
-
-```
-SpeedSlicer/
-├── index.html            # Single entry point
-├── css/
-│   └── style.css         # Dark theme styling
-├── js/
-│   ├── app.js            # Main application wiring
-│   ├── image-loader.js   # File input → ImageData
-│   ├── bg-detector.js    # Corner sampling background detection
-│   ├── element-slicer.js # HSV keying, CCL, overlap detection
-│   └── ui-controller.js  # Canvas rendering & interactions
-├── lib/
-│   └── jszip.min.js      # ZIP library
-├── samples/              # Example input images
-└── test-file/            # Original test files
-```
+- Canvas 2D API for pixel processing
+- Connected Component Labeling for element detection
+- JSZip for client-side ZIP generation
 
 ## License
 
