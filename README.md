@@ -11,7 +11,7 @@
 ![SpeedSlicer screenshot](samples/screenshot.png)
 
 ### Output
-81 individual transparent PNGs, exported in one click. ([Download sample output](samples/output-elements.zip))
+50 individual transparent PNGs, exported in one click. ([Download sample output](samples/output-elements.zip))
 
 ---
 
