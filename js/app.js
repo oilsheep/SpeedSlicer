@@ -454,8 +454,9 @@ ui.onNewBox = ({ x, y, w, h }) => {
   updateExportButtons();
 };
 
-ui.onElementSelect = (id) => {
+ui.onElementSelect = () => {
   updateElementList();
+  updateExportButtons();
 };
 
 ui.onElementsChanged = () => {
@@ -540,25 +541,42 @@ document.getElementById('export-selected').addEventListener('click', async () =>
 });
 
 document.getElementById('export-all').addEventListener('click', async () => {
-  if (ui.elements.length === 1) {
-    downloadElement(ui.elements[0]);
-    return;
-  }
   await exportAsZip(ui.elements);
 });
 
+function getFullImageCanvas() {
+  const { width, height } = ui.processedData;
+  const c = document.createElement('canvas');
+  c.width = width;
+  c.height = height;
+  c.getContext('2d').putImageData(ui.processedData, 0, 0);
+  return c;
+}
+
 async function exportAsZip(elements) {
   const zip = new JSZip();
-  const promises = elements.map((el) => {
-    return new Promise((resolve) => {
+  const promises = [];
+
+  // Include full de-backgrounded image
+  promises.push(new Promise((resolve) => {
+    const fullCanvas = getFullImageCanvas();
+    fullCanvas.toBlob((blob) => {
+      zip.file('_full_transparent.png', blob);
+      resolve();
+    }, 'image/png');
+  }));
+
+  // Include each element
+  for (const el of elements) {
+    promises.push(new Promise((resolve) => {
       const outCanvas = getElementCanvas(el);
       outCanvas.toBlob((blob) => {
         const name = el.name || `element_${String(el.id).padStart(3, '0')}`;
         zip.file(`${name}.png`, blob);
         resolve();
       }, 'image/png');
-    });
-  });
+    }));
+  }
 
   await Promise.all(promises);
   const content = await zip.generateAsync({ type: 'blob' });

@@ -113,7 +113,7 @@ export default class UIController {
       return;
     }
 
-    if (this.addBoxMode || e.shiftKey) {
+    if (this.addBoxMode) {
       this.drawingBox = {
         startX: imgPos.x, startY: imgPos.y,
         endX: imgPos.x, endY: imgPos.y,
@@ -121,8 +121,8 @@ export default class UIController {
       return;
     }
 
-    // Click on empty space without shift: deselect all
-    if (!e.shiftKey && this.selectedIds.size > 0) {
+    // Click on empty space: deselect all (shift or not)
+    if (this.selectedIds.size > 0) {
       this.selectedIds = new Set();
       if (this.onElementSelect) this.onElementSelect();
       this.render();
