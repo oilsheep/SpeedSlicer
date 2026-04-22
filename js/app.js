@@ -217,10 +217,15 @@ function processImage() {
   const processed = slicer.removeBackground(sourceData, bgColor, params);
   ui.processedData = processed;
 
-  const elements = slicer.findElements(processed, minSize);
+  let elements = slicer.findElements(processed, minSize);
+
+  // Auto-merge overlapping elements into larger boxes
+  elements = slicer.autoMergeOverlaps(elements, overlapDist);
+
   nextElementId = elements.length > 0 ? Math.max(...elements.map((e) => e.id)) + 1 : 1;
   ui.elements = elements;
 
+  // Detect remaining overlaps (after auto-merge, these are between non-adjacent groups)
   ui.overlaps = slicer.detectOverlaps(elements, overlapDist);
   ui.checkedIds = new Set(elements.map((e) => e.id));
 

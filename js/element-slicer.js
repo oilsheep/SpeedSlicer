@@ -223,6 +223,72 @@ export default class ElementSlicer {
     return pairs;
   }
 
+  /**
+   * Auto-merge overlapping/close elements into larger boxes.
+   * Uses Union-Find to group all elements connected by overlap chains,
+   * then merges each group into one bounding box.
+   */
+  autoMergeOverlaps(elements, distance = 5) {
+    if (elements.length <= 1) return elements;
+
+    // Build Union-Find over element indices
+    const n = elements.length;
+    const parent = Array.from({ length: n }, (_, i) => i);
+
+    const find = (x) => {
+      while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; }
+      return x;
+    };
+    const union = (a, b) => {
+      const ra = find(a), rb = find(b);
+      if (ra !== rb) parent[rb] = ra;
+    };
+
+    // Union all pairs within distance
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const a = elements[i], b = elements[j];
+        const gapX = Math.max(0, Math.max(a.x, b.x) - Math.min(a.x + a.w, b.x + b.w));
+        const gapY = Math.max(0, Math.max(a.y, b.y) - Math.min(a.y + a.h, b.y + b.h));
+        if (Math.sqrt(gapX ** 2 + gapY ** 2) <= distance) {
+          union(i, j);
+        }
+      }
+    }
+
+    // Group by root
+    const groups = new Map();
+    for (let i = 0; i < n; i++) {
+      const root = find(i);
+      if (!groups.has(root)) groups.set(root, []);
+      groups.get(root).push(elements[i]);
+    }
+
+    // Merge each group into one bounding box
+    const result = [];
+    let id = 1;
+    for (const [, group] of groups) {
+      if (group.length === 1) {
+        result.push({ ...group[0], id: id++ });
+      } else {
+        const minX = Math.min(...group.map((e) => e.x));
+        const minY = Math.min(...group.map((e) => e.y));
+        const maxX = Math.max(...group.map((e) => e.x + e.w));
+        const maxY = Math.max(...group.map((e) => e.y + e.h));
+        result.push({
+          id: id++,
+          x: minX,
+          y: minY,
+          w: maxX - minX,
+          h: maxY - minY,
+          pixelCount: group.reduce((s, e) => s + e.pixelCount, 0),
+        });
+      }
+    }
+
+    return result;
+  }
+
   mergeElements(elements, idA, idB) {
     const a = elements.find((e) => e.id === idA);
     const b = elements.find((e) => e.id === idB);

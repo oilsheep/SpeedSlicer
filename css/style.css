@@ -27,10 +27,6 @@ body {
   color: #e94560;
   margin: 0;
 }
-#header-author {
-  font-size: 11px;
-  color: #666;
-}
 .header-btn {
   margin-left: auto;
   padding: 4px 12px !important;
