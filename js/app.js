@@ -2,6 +2,7 @@ import ImageLoader from './image-loader.js';
 import BackgroundDetector from './bg-detector.js';
 import ElementSlicer from './element-slicer.js';
 import UIController from './ui-controller.js';
+import { languageNames, detectLanguage, t, setLanguage, applyTranslations } from './i18n.js';
 
 const loader = new ImageLoader();
 const detector = new BackgroundDetector();
@@ -9,6 +10,24 @@ const slicer = new ElementSlicer();
 
 const canvas = document.getElementById('preview-canvas');
 const ui = new UIController(canvas);
+
+// --- Language Setup ---
+const langSelect = document.getElementById('lang-select');
+for (const [code, name] of Object.entries(languageNames)) {
+  const opt = document.createElement('option');
+  opt.value = code;
+  opt.textContent = name;
+  langSelect.appendChild(opt);
+}
+const initialLang = detectLanguage();
+langSelect.value = initialLang;
+setLanguage(initialLang);
+
+langSelect.addEventListener('change', (e) => {
+  setLanguage(e.target.value);
+  // Re-render element list to update download titles
+  updateElementList();
+});
 
 // State
 let bgColor = { r: 0, g: 255, b: 0 };
@@ -51,7 +70,7 @@ function showUndoIndicator() {
     indicator.id = 'undo-indicator';
     document.body.appendChild(indicator);
   }
-  indicator.textContent = `復原 (剩餘 ${undoStack.length} 步)`;
+  indicator.textContent = t('undoMsg', { n: undoStack.length });
   indicator.classList.add('show');
   clearTimeout(indicator._timer);
   indicator._timer = setTimeout(() => indicator.classList.remove('show'), 1200);
@@ -296,7 +315,7 @@ function updateElementList() {
     const downloadBtn = document.createElement('button');
     downloadBtn.className = 'download-btn';
     downloadBtn.dataset.id = el.id;
-    downloadBtn.title = '下載';
+    downloadBtn.title = t('download');
     downloadBtn.textContent = '⬇';
 
     item.appendChild(checkbox);
@@ -383,7 +402,7 @@ function showContextMenu(x, y, el) {
 
   const deleteItem = document.createElement('div');
   deleteItem.className = 'context-menu-item';
-  deleteItem.textContent = '刪除';
+  deleteItem.textContent = t('deleteAction');
   deleteItem.addEventListener('click', () => {
     saveUndoState();
     ui.elements = ui.elements.filter((e) => e.id !== el.id);
@@ -406,7 +425,7 @@ function showContextMenu(x, y, el) {
     mergeItem.className = 'context-menu-item';
     const partnerEl = ui.elements.find((e) => e.id === partnerId);
     const partnerName = partnerEl?.name || `element_${String(partnerId).padStart(3, '0')}`;
-    mergeItem.textContent = `合併 ${partnerName}`;
+    mergeItem.textContent = `${t('mergeAction')} ${partnerName}`;
     mergeItem.addEventListener('click', () => {
       saveUndoState();
       ui.elements = slicer.mergeElements(ui.elements, el.id, partnerId);
@@ -646,7 +665,7 @@ document.getElementById('config-file-input').addEventListener('change', (e) => {
       const config = JSON.parse(ev.target.result);
       applyConfig(config);
     } catch (err) {
-      alert('設定檔格式錯誤');
+      alert(t('configError'));
     }
   };
   reader.readAsText(file);

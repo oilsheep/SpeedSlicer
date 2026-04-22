@@ -32,6 +32,21 @@ body {
   padding: 4px 12px !important;
   font-size: 12px !important;
 }
+#lang-group {
+  display: flex;
+  align-items: center;
+}
+#lang-select {
+  background: #0f3460;
+  color: #e0e0e0;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+}
+#lang-select:hover { border-color: #e94560; }
 
 #main {
   display: flex;
@@ -374,7 +389,7 @@ body {
 
 /* === Loading State === */
 #canvas-area.loading::after {
-  content: '處理中...';
+  content: var(--loading-text, "Processing...");
   position: absolute;
   inset: 0;
   display: flex;

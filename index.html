@@ -11,14 +11,17 @@
     <!-- Top bar -->
     <header id="header">
       <h1>SpeedSlicer</h1>
-      <button id="load-new-image-btn" class="btn-secondary header-btn">載入新圖片</button>
+      <button id="load-new-image-btn" class="btn-secondary header-btn" data-i18n="loadNewImage"></button>
+      <div id="lang-group">
+        <select id="lang-select"></select>
+      </div>
     </header>
 
     <div id="main">
       <!-- Left: Canvas area -->
       <div id="canvas-area">
         <div id="drop-zone">
-          <p>拖放圖片到這裡，或點擊選擇檔案</p>
+          <p data-i18n="dropZone"></p>
           <input type="file" id="file-input" accept="image/*" />
         </div>
         <canvas id="preview-canvas"></canvas>
@@ -31,51 +34,51 @@
       <div id="panel">
         <!-- Settings section -->
         <div id="settings-section" class="panel-section">
-          <h3>設定</h3>
+          <h3 data-i18n="settings"></h3>
 
           <!-- Background color -->
           <div class="control-group">
-            <label>背景色</label>
+            <label data-i18n="bgColor"></label>
             <div id="bg-color-row">
               <div id="bg-color-swatch"></div>
               <input type="color" id="bg-color-picker" value="#00ff00" />
-              <button id="bg-eyedropper-btn" title="從圖片取色">🎯</button>
+              <button id="bg-eyedropper-btn" data-i18n-title="eyedropperTitle">🎯</button>
             </div>
           </div>
 
           <!-- Mode toggle -->
           <div class="control-group">
-            <label>去背模式</label>
+            <label data-i18n="keyingMode"></label>
             <div id="mode-toggle">
-              <button id="mode-gradient" class="mode-btn active">漸變</button>
-              <button id="mode-threshold" class="mode-btn">閾值</button>
+              <button id="mode-gradient" class="mode-btn active" data-i18n="modeGradient"></button>
+              <button id="mode-threshold" class="mode-btn" data-i18n="modeThreshold"></button>
             </div>
           </div>
 
           <!-- Gradient mode params (HSV keying) -->
           <div id="gradient-params" class="param-group">
             <div class="control-group">
-              <label>色相內圈 <span id="inner-hue-val">15</span>°</label>
+              <label data-i18n-label="innerHue" data-i18n-suffix="°"><span id="inner-hue-val">15</span>°</label>
               <input type="range" id="inner-hue" min="1" max="90" value="15" />
             </div>
             <div class="control-group">
-              <label>色相外圈 <span id="outer-hue-val">40</span>°</label>
+              <label data-i18n-label="outerHue" data-i18n-suffix="°"><span id="outer-hue-val">40</span>°</label>
               <input type="range" id="outer-hue" min="5" max="120" value="40" />
             </div>
             <div class="control-group">
-              <label>飽和度保護 <span id="sat-thresh-val">15</span>%</label>
+              <label data-i18n-label="satProtect" data-i18n-suffix="%"><span id="sat-thresh-val">15</span>%</label>
               <input type="range" id="sat-threshold" min="0" max="50" value="15" />
             </div>
             <div class="control-group">
-              <label>亮度保護 <span id="val-thresh-val">10</span>%</label>
+              <label data-i18n-label="valProtect" data-i18n-suffix="%"><span id="val-thresh-val">10</span>%</label>
               <input type="range" id="val-threshold" min="0" max="50" value="10" />
             </div>
             <div class="control-group">
-              <label>去色溢強度 <span id="despill-val">100</span>%</label>
+              <label data-i18n-label="despillStrength" data-i18n-suffix="%"><span id="despill-val">100</span>%</label>
               <input type="range" id="despill-strength" min="0" max="100" value="100" />
             </div>
             <div class="control-group">
-              <label>抗鋸齒距離 <span id="gradient-aa-val">3</span>px</label>
+              <label data-i18n-label="antiAlias" data-i18n-suffix="px"><span id="gradient-aa-val">3</span>px</label>
               <input type="range" id="gradient-aa-dist" min="0" max="5" value="3" />
             </div>
           </div>
@@ -83,30 +86,30 @@
           <!-- Threshold mode params -->
           <div id="threshold-params" class="param-group" style="display:none;">
             <div class="control-group">
-              <label>閾值 <span id="thresh-val">50</span></label>
+              <label data-i18n-label="thresholdVal"><span id="thresh-val">50</span></label>
               <input type="range" id="threshold-value" min="0" max="255" value="50" />
             </div>
             <div class="control-group">
-              <label>抗鋸齒距離 <span id="thresh-aa-val">1</span>px</label>
+              <label data-i18n-label="antiAlias" data-i18n-suffix="px"><span id="thresh-aa-val">1</span>px</label>
               <input type="range" id="thresh-aa-dist" min="0" max="5" value="1" />
             </div>
           </div>
 
           <!-- Element detection params -->
           <div class="control-group">
-            <label>最小元件尺寸 <span id="min-size-val">15</span>px</label>
+            <label data-i18n-label="minElementSize" data-i18n-suffix="px"><span id="min-size-val">15</span>px</label>
             <input type="range" id="min-element-size" min="1" max="100" value="15" />
           </div>
           <div class="control-group">
-            <label>重疊偵測距離 <span id="overlap-dist-val">12</span>px</label>
+            <label data-i18n-label="overlapDist" data-i18n-suffix="px"><span id="overlap-dist-val">12</span>px</label>
             <input type="range" id="overlap-distance" min="0" max="50" value="12" />
           </div>
 
-          <button id="recalculate-btn" class="btn-primary" style="width:100%;margin-top:4px;" disabled>重新計算</button>
+          <button id="recalculate-btn" class="btn-primary" style="width:100%;margin-top:4px;" disabled data-i18n="recalculate"></button>
 
           <div class="config-actions">
-            <button id="save-config-btn" class="btn-secondary config-btn">儲存設定</button>
-            <button id="load-config-btn" class="btn-secondary config-btn">載入設定</button>
+            <button id="save-config-btn" class="btn-secondary config-btn" data-i18n="saveConfig"></button>
+            <button id="load-config-btn" class="btn-secondary config-btn" data-i18n="loadConfig"></button>
             <input type="file" id="config-file-input" accept=".json" style="display:none;" />
           </div>
         </div>
@@ -114,10 +117,10 @@
         <!-- Element list section -->
         <div id="elements-section" class="panel-section">
           <div class="element-list-header">
-            <h3>元件列表 (<span id="element-count">0</span>)</h3>
+            <h3><span data-i18n="elementList"></span> (<span id="element-count">0</span>)</h3>
             <div class="element-list-actions">
-              <button id="add-box-btn" class="icon-btn" title="新增切圖框 (Shift+拖拽)">+</button>
-              <button id="delete-selected-btn" class="icon-btn" title="刪除選取的元件 (Delete)">🗑</button>
+              <button id="add-box-btn" class="icon-btn" data-i18n-title="addBoxTitle">+</button>
+              <button id="delete-selected-btn" class="icon-btn" data-i18n-title="deleteTitle">🗑</button>
             </div>
           </div>
           <div id="element-list"></div>
@@ -128,11 +131,11 @@
     <!-- Bottom: Export bar -->
     <footer id="export-bar">
       <div class="control-group export-padding">
-        <label>Padding <span id="padding-val">0</span>px</label>
+        <label data-i18n-label="padding" data-i18n-suffix="px"><span id="padding-val">0</span>px</label>
         <input type="range" id="export-padding" min="0" max="20" value="0" />
       </div>
-      <button id="export-selected" class="btn-primary" disabled>匯出選取的元件</button>
-      <button id="export-all" class="btn-secondary" disabled>全部匯出</button>
+      <button id="export-selected" class="btn-primary" disabled data-i18n="exportSelected"></button>
+      <button id="export-all" class="btn-secondary" disabled data-i18n="exportAll"></button>
     </footer>
   </div>
 
