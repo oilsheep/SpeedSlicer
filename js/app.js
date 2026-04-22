@@ -589,6 +589,92 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
+// --- Config Save / Load ---
+
+document.getElementById('save-config-btn').addEventListener('click', () => {
+  const isGradient = modeGradient.classList.contains('active');
+  const config = {
+    version: 1,
+    bgColor,
+    mode: isGradient ? 'gradient' : 'threshold',
+    innerThreshold: +document.getElementById('inner-threshold').value,
+    outerThreshold: +document.getElementById('outer-threshold').value,
+    gradientAaDist: +document.getElementById('gradient-aa-dist').value,
+    threshold: +document.getElementById('threshold-value').value,
+    threshAaDist: +document.getElementById('thresh-aa-dist').value,
+    minElementSize: +document.getElementById('min-element-size').value,
+    overlapDistance: +document.getElementById('overlap-distance').value,
+    exportPadding: +document.getElementById('export-padding').value,
+  };
+
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'green-key-config.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+document.getElementById('load-config-btn').addEventListener('click', () => {
+  document.getElementById('config-file-input').click();
+});
+
+document.getElementById('config-file-input').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const config = JSON.parse(ev.target.result);
+      applyConfig(config);
+    } catch (err) {
+      alert('設定檔格式錯誤');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = ''; // reset so same file can be loaded again
+});
+
+function applyConfig(config) {
+  // Background color
+  if (config.bgColor) {
+    bgColor = config.bgColor;
+    updateBgColorUI();
+  }
+
+  // Mode
+  if (config.mode === 'gradient') {
+    modeGradient.click();
+  } else if (config.mode === 'threshold') {
+    modeThreshold.click();
+  }
+
+  // Sliders
+  function setSlider(id, displayId, value, suffix = '') {
+    const slider = document.getElementById(id);
+    const display = document.getElementById(displayId);
+    if (slider && value != null) {
+      slider.value = value;
+      display.textContent = value + suffix;
+    }
+  }
+
+  setSlider('inner-threshold', 'inner-val', config.innerThreshold);
+  setSlider('outer-threshold', 'outer-val', config.outerThreshold);
+  setSlider('gradient-aa-dist', 'gradient-aa-val', config.gradientAaDist);
+  setSlider('threshold-value', 'thresh-val', config.threshold);
+  setSlider('thresh-aa-dist', 'thresh-aa-val', config.threshAaDist);
+  setSlider('min-element-size', 'min-size-val', config.minElementSize);
+  setSlider('overlap-distance', 'overlap-dist-val', config.overlapDistance);
+  setSlider('export-padding', 'padding-val', config.exportPadding);
+
+  // Re-process if image is loaded
+  if (loader.getOriginalData()) {
+    processImage();
+  }
+}
+
 // --- Window Resize ---
 window.addEventListener('resize', () => {
   if (ui.processedData) ui.render();
