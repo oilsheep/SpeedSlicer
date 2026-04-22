@@ -76,12 +76,12 @@
           <div class="control-group">
             <label data-i18n="keyingMode"></label>
             <div id="mode-toggle">
-              <button id="mode-gradient" class="mode-btn active" data-i18n="modeGradient"></button>
-              <button id="mode-threshold" class="mode-btn" data-i18n="modeThreshold"></button>
+              <button id="mode-gradient" class="mode-btn" data-i18n="modeGradient"></button>
+              <button id="mode-threshold" class="mode-btn active" data-i18n="modeThreshold"></button>
             </div>
           </div>
 
-          <div id="gradient-params" class="param-group">
+          <div id="gradient-params" class="param-group" style="display:none;">
             <div class="control-group">
               <label data-i18n-label="innerHue" data-i18n-suffix="°"><span id="inner-hue-val">15</span>°</label>
               <input type="range" id="inner-hue" min="1" max="90" value="15" />
@@ -108,24 +108,24 @@
             </div>
           </div>
 
-          <div id="threshold-params" class="param-group" style="display:none;">
+          <div id="threshold-params" class="param-group">
             <div class="control-group">
-              <label data-i18n-label="thresholdVal"><span id="thresh-val">50</span></label>
-              <input type="range" id="threshold-value" min="0" max="255" value="50" />
+              <label data-i18n-label="thresholdVal"><span id="thresh-val">158</span></label>
+              <input type="range" id="threshold-value" min="0" max="255" value="158" />
             </div>
             <div class="control-group">
-              <label data-i18n-label="antiAlias" data-i18n-suffix="px"><span id="thresh-aa-val">1</span>px</label>
-              <input type="range" id="thresh-aa-dist" min="0" max="5" value="1" />
+              <label data-i18n-label="antiAlias" data-i18n-suffix="px"><span id="thresh-aa-val">2</span>px</label>
+              <input type="range" id="thresh-aa-dist" min="0" max="5" value="2" />
             </div>
           </div>
 
           <div class="control-group">
-            <label data-i18n-label="minElementSize" data-i18n-suffix="px"><span id="min-size-val">15</span>px</label>
-            <input type="range" id="min-element-size" min="1" max="100" value="15" />
+            <label data-i18n-label="minElementSize" data-i18n-suffix="px"><span id="min-size-val">34</span>px</label>
+            <input type="range" id="min-element-size" min="1" max="100" value="34" />
           </div>
           <div class="control-group">
-            <label data-i18n-label="overlapDist" data-i18n-suffix="px"><span id="overlap-dist-val">12</span>px</label>
-            <input type="range" id="overlap-distance" min="0" max="50" value="12" />
+            <label data-i18n-label="overlapDist" data-i18n-suffix="px"><span id="overlap-dist-val">13</span>px</label>
+            <input type="range" id="overlap-distance" min="0" max="50" value="13" />
           </div>
 
           <button id="recalculate-btn" class="btn-accent" disabled data-i18n="recalculate"></button>
