@@ -204,6 +204,47 @@ export default class ElementSlicer {
     return elements;
   }
 
+  detectOverlaps(elements, distance = 5) {
+    const pairs = [];
+    for (let i = 0; i < elements.length; i++) {
+      for (let j = i + 1; j < elements.length; j++) {
+        const a = elements[i];
+        const b = elements[j];
+
+        const gapX = Math.max(0, Math.max(a.x, b.x) - Math.min(a.x + a.w, b.x + b.w));
+        const gapY = Math.max(0, Math.max(a.y, b.y) - Math.min(a.y + a.h, b.y + b.h));
+        const gap = Math.sqrt(gapX ** 2 + gapY ** 2);
+
+        if (gap <= distance) {
+          pairs.push([a.id, b.id]);
+        }
+      }
+    }
+    return pairs;
+  }
+
+  mergeElements(elements, idA, idB) {
+    const a = elements.find((e) => e.id === idA);
+    const b = elements.find((e) => e.id === idB);
+    if (!a || !b) return elements;
+
+    const merged = {
+      id: Math.min(a.id, b.id),
+      x: Math.min(a.x, b.x),
+      y: Math.min(a.y, b.y),
+      w: 0,
+      h: 0,
+      pixelCount: a.pixelCount + b.pixelCount,
+    };
+    merged.w = Math.max(a.x + a.w, b.x + b.w) - merged.x;
+    merged.h = Math.max(a.y + a.h, b.y + b.h) - merged.y;
+
+    return elements
+      .filter((e) => e.id !== idA && e.id !== idB)
+      .concat(merged)
+      .sort((a, b) => a.id - b.id);
+  }
+
   _find(parent, x) {
     while (parent[x] !== x) {
       parent[x] = parent[parent[x]];
