@@ -222,14 +222,30 @@ function updateElementList() {
     renderThumbnail(thumbCanvas, el);
     thumbDiv.appendChild(thumbCanvas);
 
-    item.innerHTML = `
-      <input type="checkbox" ${ui.checkedIds.has(el.id) ? 'checked' : ''} data-id="${el.id}" />
-    `;
+    // Build all elements via DOM API to avoid innerHTML destroying the canvas
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = ui.checkedIds.has(el.id);
+    checkbox.dataset.id = el.id;
+
+    const nameDiv = document.createElement('div');
+    nameDiv.className = 'name';
+    const nameInput = document.createElement('input');
+    nameInput.type = 'text';
+    nameInput.value = name;
+    nameInput.dataset.id = el.id;
+    nameDiv.appendChild(nameInput);
+
+    const downloadBtn = document.createElement('button');
+    downloadBtn.className = 'download-btn';
+    downloadBtn.dataset.id = el.id;
+    downloadBtn.title = '下載';
+    downloadBtn.textContent = '⬇';
+
+    item.appendChild(checkbox);
     item.appendChild(thumbDiv);
-    item.innerHTML += `
-      <div class="name"><input type="text" value="${name}" data-id="${el.id}" /></div>
-      <button class="download-btn" data-id="${el.id}" title="下載">⬇</button>
-    `;
+    item.appendChild(nameDiv);
+    item.appendChild(downloadBtn);
 
     item.addEventListener('click', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;

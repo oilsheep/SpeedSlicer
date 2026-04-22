@@ -230,6 +230,7 @@ export default class ElementSlicer {
 
     const merged = {
       id: Math.min(a.id, b.id),
+      name: a.name || b.name,
       x: Math.min(a.x, b.x),
       y: Math.min(a.y, b.y),
       w: 0,
