@@ -93,13 +93,13 @@ export default class ElementSlicer {
       this._applyAntiAlias(dst, width, height, antiAliasDist);
     }
 
-    // Step 3: Despill — remove key color contamination from all non-fully-transparent pixels
+    // Step 3: Despill — only correct key-color contamination on semi-transparent edge
+    // pixels. Interior opaque pixels keep their original colors so legitimate UI colors
+    // that happen to share a channel with the key (yellow, cyan, light green, ...) are
+    // not shifted. PNG export uses straight alpha, so no premultiplication step.
     if (despillStrength > 0) {
       this._despill(dst, bgColor, despillStrength);
     }
-
-    // Step 4: Premultiply alpha for correct compositing
-    this._premultiply(dst);
 
     return out;
   }
@@ -153,56 +153,33 @@ export default class ElementSlicer {
     }
   }
 
-  /**
-   * Despill: suppress key color contamination.
-   * Clamps the dominant key channel so it doesn't exceed the average of the other two.
-   * Redistributes excess energy to maintain perceived brightness.
-   */
   _despill(data, bgColor, strength) {
-    // Determine which channel is dominant in the key color
     const { r: kr, g: kg, b: kb } = bgColor;
-    // Find which channel is the "key channel" (the one the key color is strongest in)
-    let keyChannel; // 0=R, 1=G, 2=B
-    if (kg >= kr && kg >= kb) keyChannel = 1; // green key (most common)
-    else if (kb >= kr && kb >= kg) keyChannel = 2; // blue key
-    else keyChannel = 0; // red key
+    let keyChannel;
+    if (kg >= kr && kg >= kb) keyChannel = 1;
+    else if (kb >= kr && kb >= kg) keyChannel = 2;
+    else keyChannel = 0;
 
-    const ch1 = (keyChannel + 1) % 3; // other channel 1
-    const ch2 = (keyChannel + 2) % 3; // other channel 2
+    const ch1 = (keyChannel + 1) % 3;
+    const ch2 = (keyChannel + 2) % 3;
 
     for (let i = 0; i < data.length; i += 4) {
       const a = data[i + 3];
-      if (a === 0) continue; // fully transparent, skip
+      // Skip fully transparent and fully opaque pixels — only edge pixels can carry spill.
+      if (a === 0 || a === 255) continue;
 
       const kv = data[i + keyChannel];
       const ov1 = data[i + ch1];
       const ov2 = data[i + ch2];
 
-      // Max allowed value for key channel = average of the other two
-      const maxAllowed = (ov1 + ov2) / 2;
+      // Max suppression: only clamp the key channel when it dominates BOTH other channels.
+      // This preserves yellow, cyan, white, and other legitimate non-key colors.
+      const maxAllowed = Math.max(ov1, ov2);
 
       if (kv > maxAllowed) {
         const spill = (kv - maxAllowed) * strength;
         data[i + keyChannel] = Math.round(kv - spill);
-        // Redistribute to maintain luminance
-        data[i + ch1] = Math.min(255, Math.round(ov1 + spill * 0.5));
-        data[i + ch2] = Math.min(255, Math.round(ov2 + spill * 0.5));
       }
-    }
-  }
-
-  /**
-   * Premultiply RGB by alpha for correct compositing.
-   * Semi-transparent edge pixels need this to avoid bright/dark halos.
-   */
-  _premultiply(data) {
-    for (let i = 0; i < data.length; i += 4) {
-      const a = data[i + 3];
-      if (a === 255 || a === 0) continue;
-      const f = a / 255;
-      data[i]     = Math.round(data[i] * f);
-      data[i + 1] = Math.round(data[i + 1] * f);
-      data[i + 2] = Math.round(data[i + 2] * f);
     }
   }
 

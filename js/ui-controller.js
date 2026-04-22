@@ -361,8 +361,9 @@ export default class UIController {
     tmpCanvas.getContext('2d').putImageData(this.processedData, 0, 0);
     ctx.drawImage(tmpCanvas, 0, 0);
 
-    // Draw element mask overlay: tint each element's pixels with a unique color
-    if (this.elementMap && this.elements.length > 0) {
+    // Draw element mask overlay: only tint pixels of currently-selected elements,
+    // so the default preview shows the true de-backgrounded colors without a tint shift.
+    if (this.elementMap && this.selectedIds.size > 0) {
       const maskCanvas = document.createElement('canvas');
       maskCanvas.width = width;
       maskCanvas.height = height;
@@ -370,7 +371,6 @@ export default class UIController {
       const maskData = maskCtx.createImageData(width, height);
       const md = maskData.data;
 
-      // Assign a color per element ID
       const colors = [
         [79, 195, 247], [233, 69, 96], [76, 175, 80], [255, 183, 77],
         [186, 104, 200], [255, 138, 101], [77, 208, 225], [255, 213, 79],
@@ -379,26 +379,28 @@ export default class UIController {
 
       for (let i = 0; i < this.elementMap.length; i++) {
         const elId = this.elementMap[i];
-        if (elId === 0) continue;
+        if (elId === 0 || !this.selectedIds.has(elId)) continue;
         const c = colors[(elId - 1) % colors.length];
         const pi = i * 4;
-        const isSelected = this.selectedIds.has(elId);
-        const alpha = isSelected ? 90 : 40;
-        md[pi] = c[0]; md[pi + 1] = c[1]; md[pi + 2] = c[2]; md[pi + 3] = alpha;
+        md[pi] = c[0]; md[pi + 1] = c[1]; md[pi + 2] = c[2]; md[pi + 3] = 90;
       }
 
       maskCtx.putImageData(maskData, 0, 0);
       ctx.drawImage(maskCanvas, 0, 0);
     }
 
-    // Draw element bounding boxes
+    // Draw element bounding boxes — stroke is drawn just outside the element so the
+    // line color (and its anti-alias halo) never bleeds into the element interior,
+    // which would otherwise look like a faint colored mask over every element.
     for (const el of this.elements) {
       const isSelected = this.selectedIds.has(el.id);
 
       ctx.strokeStyle = isSelected ? '#e94560' : '#4fc3f7';
-      ctx.lineWidth = (isSelected ? 2 : 1) / this.zoom;
+      const lw = (isSelected ? 2 : 1) / this.zoom;
+      ctx.lineWidth = lw;
       ctx.setLineDash([]);
-      ctx.strokeRect(el.x, el.y, el.w, el.h);
+      const half = lw / 2;
+      ctx.strokeRect(el.x - half, el.y - half, el.w + lw, el.h + lw);
 
       if (isSelected) {
         const hs = 4 / this.zoom;
