@@ -1,11 +1,42 @@
 export default class ElementSlicer {
+
+  // --- Color space helpers ---
+
+  _rgbToHsv(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const d = max - min;
+    let h = 0, s = max === 0 ? 0 : d / max, v = max;
+
+    if (d !== 0) {
+      if (max === r) h = ((g - b) / d + 6) % 6;
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h *= 60;
+    }
+    return { h, s, v };
+  }
+
+  _hueDist(h1, h2) {
+    const d = Math.abs(h1 - h2);
+    return d > 180 ? 360 - d : d;
+  }
+
+  // --- Main background removal ---
+
   removeBackground(sourceData, bgColor, params = {}) {
     const {
       mode = 'gradient',
-      innerThreshold = 163,
-      outerThreshold = 169,
+      // HSV mode params (gradient)
+      innerHue = 15,
+      outerHue = 40,
+      satThreshold = 0.15,
+      valThreshold = 0.10,
+      // RGB threshold mode params
       threshold = 50,
+      // Shared
       antiAliasDist = 3,
+      despillStrength = 1.0,
     } = params;
 
     const { width, height } = sourceData;
@@ -13,39 +44,62 @@ export default class ElementSlicer {
     const out = new ImageData(new Uint8ClampedArray(src), width, height);
     const dst = out.data;
 
-    // Step 1: Compute raw alpha for each pixel based on color distance
+    const keyHsv = this._rgbToHsv(bgColor.r, bgColor.g, bgColor.b);
+
+    // Step 1: Compute alpha
     for (let i = 0; i < dst.length; i += 4) {
       const r = dst[i], g = dst[i + 1], b = dst[i + 2];
-      const dist = Math.sqrt(
-        (r - bgColor.r) ** 2 +
-        (g - bgColor.g) ** 2 +
-        (b - bgColor.b) ** 2
-      );
 
       if (mode === 'gradient') {
-        if (dist <= innerThreshold) {
+        // HSV hue-based keying
+        const hsv = this._rgbToHsv(r, g, b);
+        const hDist = this._hueDist(hsv.h, keyHsv.h);
+
+        // Protect low-saturation pixels (grays, whites) from being keyed
+        if (hsv.s < satThreshold) {
+          dst[i + 3] = 255;
+          continue;
+        }
+        // Protect dark pixels (blacks, shadows)
+        if (hsv.v < valThreshold) {
+          dst[i + 3] = 255;
+          continue;
+        }
+
+        // Also consider saturation similarity to key for better discrimination
+        const satFactor = Math.min(1, hsv.s / Math.max(keyHsv.s, 0.01));
+
+        if (hDist <= innerHue && satFactor > 0.3) {
           dst[i + 3] = 0;
-        } else if (dist >= outerThreshold) {
+        } else if (hDist >= outerHue) {
           dst[i + 3] = 255;
         } else {
-          dst[i + 3] = Math.round(
-            ((dist - innerThreshold) / (outerThreshold - innerThreshold)) * 255
-          );
+          const hueAlpha = (hDist - innerHue) / (outerHue - innerHue);
+          dst[i + 3] = Math.round(Math.min(255, hueAlpha * 255));
         }
       } else {
+        // Simple RGB threshold mode (unchanged)
+        const dist = Math.sqrt(
+          (r - bgColor.r) ** 2 +
+          (g - bgColor.g) ** 2 +
+          (b - bgColor.b) ** 2
+        );
         dst[i + 3] = dist > threshold ? 255 : 0;
       }
     }
 
-    // Step 2: Anti-aliasing
+    // Step 2: Anti-aliasing — smooth edges
     if (antiAliasDist > 0) {
       this._applyAntiAlias(dst, width, height, antiAliasDist);
     }
 
-    // Step 3: Color decontamination (gradient mode only)
-    if (mode === 'gradient') {
-      this._decontaminate(dst, bgColor);
+    // Step 3: Despill — remove key color contamination from all non-fully-transparent pixels
+    if (despillStrength > 0) {
+      this._despill(dst, bgColor, despillStrength);
     }
+
+    // Step 4: Premultiply alpha for correct compositing
+    this._premultiply(dst);
 
     return out;
   }
@@ -62,8 +116,7 @@ export default class ElementSlicer {
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const idx = y * width + x;
-        const a = origAlpha[idx];
-        if (a === 0) continue;
+        if (origAlpha[idx] === 0) continue;
 
         let nearTransparent = false;
         for (let dy = -dist; dy <= dist && !nearTransparent; dy++) {
@@ -71,9 +124,7 @@ export default class ElementSlicer {
             if (dx === 0 && dy === 0) continue;
             const nx = x + dx, ny = y + dy;
             if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
-            if (origAlpha[ny * width + nx] === 0) {
-              nearTransparent = true;
-            }
+            if (origAlpha[ny * width + nx] === 0) nearTransparent = true;
           }
         }
         if (nearTransparent) isEdge[idx] = 1;
@@ -102,15 +153,56 @@ export default class ElementSlicer {
     }
   }
 
-  _decontaminate(data, bgColor) {
+  /**
+   * Despill: suppress key color contamination.
+   * Clamps the dominant key channel so it doesn't exceed the average of the other two.
+   * Redistributes excess energy to maintain perceived brightness.
+   */
+  _despill(data, bgColor, strength) {
+    // Determine which channel is dominant in the key color
+    const { r: kr, g: kg, b: kb } = bgColor;
+    // Find which channel is the "key channel" (the one the key color is strongest in)
+    let keyChannel; // 0=R, 1=G, 2=B
+    if (kg >= kr && kg >= kb) keyChannel = 1; // green key (most common)
+    else if (kb >= kr && kb >= kg) keyChannel = 2; // blue key
+    else keyChannel = 0; // red key
+
+    const ch1 = (keyChannel + 1) % 3; // other channel 1
+    const ch2 = (keyChannel + 2) % 3; // other channel 2
+
     for (let i = 0; i < data.length; i += 4) {
       const a = data[i + 3];
-      if (a === 0 || a === 255) continue;
+      if (a === 0) continue; // fully transparent, skip
 
-      const factor = 1 - a / 255;
-      data[i]     = Math.round(data[i]     + (255 - data[i])     * factor);
-      data[i + 1] = Math.round(data[i + 1] + (255 - data[i + 1]) * factor);
-      data[i + 2] = Math.round(data[i + 2] + (255 - data[i + 2]) * factor);
+      const kv = data[i + keyChannel];
+      const ov1 = data[i + ch1];
+      const ov2 = data[i + ch2];
+
+      // Max allowed value for key channel = average of the other two
+      const maxAllowed = (ov1 + ov2) / 2;
+
+      if (kv > maxAllowed) {
+        const spill = (kv - maxAllowed) * strength;
+        data[i + keyChannel] = Math.round(kv - spill);
+        // Redistribute to maintain luminance
+        data[i + ch1] = Math.min(255, Math.round(ov1 + spill * 0.5));
+        data[i + ch2] = Math.min(255, Math.round(ov2 + spill * 0.5));
+      }
+    }
+  }
+
+  /**
+   * Premultiply RGB by alpha for correct compositing.
+   * Semi-transparent edge pixels need this to avoid bright/dark halos.
+   */
+  _premultiply(data) {
+    for (let i = 0; i < data.length; i += 4) {
+      const a = data[i + 3];
+      if (a === 255 || a === 0) continue;
+      const f = a / 255;
+      data[i]     = Math.round(data[i] * f);
+      data[i + 1] = Math.round(data[i + 1] * f);
+      data[i + 2] = Math.round(data[i + 2] * f);
     }
   }
 

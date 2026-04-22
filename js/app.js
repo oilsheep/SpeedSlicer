@@ -182,8 +182,11 @@ function bindSlider(id, displayId, suffix = '') {
   });
 }
 
-bindSlider('inner-threshold', 'inner-val');
-bindSlider('outer-threshold', 'outer-val');
+bindSlider('inner-hue', 'inner-hue-val');
+bindSlider('outer-hue', 'outer-hue-val');
+bindSlider('sat-threshold', 'sat-thresh-val');
+bindSlider('val-threshold', 'val-thresh-val');
+bindSlider('despill-strength', 'despill-val');
 bindSlider('gradient-aa-dist', 'gradient-aa-val');
 bindSlider('threshold-value', 'thresh-val');
 bindSlider('thresh-aa-dist', 'thresh-aa-val');
@@ -197,9 +200,15 @@ function getParams() {
   const isGradient = modeGradient.classList.contains('active');
   return {
     mode: isGradient ? 'gradient' : 'threshold',
-    innerThreshold: +document.getElementById('inner-threshold').value,
-    outerThreshold: +document.getElementById('outer-threshold').value,
+    // HSV keying params
+    innerHue: +document.getElementById('inner-hue').value,
+    outerHue: +document.getElementById('outer-hue').value,
+    satThreshold: +document.getElementById('sat-threshold').value / 100,
+    valThreshold: +document.getElementById('val-threshold').value / 100,
+    despillStrength: +document.getElementById('despill-strength').value / 100,
+    // RGB threshold params
     threshold: +document.getElementById('threshold-value').value,
+    // Shared
     antiAliasDist: isGradient
       ? +document.getElementById('gradient-aa-dist').value
       : +document.getElementById('thresh-aa-dist').value,
@@ -599,11 +608,14 @@ window.addEventListener('keydown', (e) => {
 document.getElementById('save-config-btn').addEventListener('click', () => {
   const isGradient = modeGradient.classList.contains('active');
   const config = {
-    version: 1,
+    version: 2,
     bgColor,
     mode: isGradient ? 'gradient' : 'threshold',
-    innerThreshold: +document.getElementById('inner-threshold').value,
-    outerThreshold: +document.getElementById('outer-threshold').value,
+    innerHue: +document.getElementById('inner-hue').value,
+    outerHue: +document.getElementById('outer-hue').value,
+    satThreshold: +document.getElementById('sat-threshold').value,
+    valThreshold: +document.getElementById('val-threshold').value,
+    despillStrength: +document.getElementById('despill-strength').value,
     gradientAaDist: +document.getElementById('gradient-aa-dist').value,
     threshold: +document.getElementById('threshold-value').value,
     threshAaDist: +document.getElementById('thresh-aa-dist').value,
@@ -615,7 +627,7 @@ document.getElementById('save-config-btn').addEventListener('click', () => {
   const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'green-key-config.json';
+  a.download = 'speedslicer-config.json';
   a.click();
   URL.revokeObjectURL(a.href);
 });
@@ -665,8 +677,11 @@ function applyConfig(config) {
     }
   }
 
-  setSlider('inner-threshold', 'inner-val', config.innerThreshold);
-  setSlider('outer-threshold', 'outer-val', config.outerThreshold);
+  setSlider('inner-hue', 'inner-hue-val', config.innerHue);
+  setSlider('outer-hue', 'outer-hue-val', config.outerHue);
+  setSlider('sat-threshold', 'sat-thresh-val', config.satThreshold);
+  setSlider('val-threshold', 'val-thresh-val', config.valThreshold);
+  setSlider('despill-strength', 'despill-val', config.despillStrength);
   setSlider('gradient-aa-dist', 'gradient-aa-val', config.gradientAaDist);
   setSlider('threshold-value', 'thresh-val', config.threshold);
   setSlider('thresh-aa-dist', 'thresh-aa-val', config.threshAaDist);
