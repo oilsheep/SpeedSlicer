@@ -2,10 +2,10 @@ export default class ElementSlicer {
   removeBackground(sourceData, bgColor, params = {}) {
     const {
       mode = 'gradient',
-      innerThreshold = 30,
-      outerThreshold = 80,
+      innerThreshold = 163,
+      outerThreshold = 169,
       threshold = 50,
-      antiAliasDist = 1,
+      antiAliasDist = 3,
     } = params;
 
     const { width, height } = sourceData;
