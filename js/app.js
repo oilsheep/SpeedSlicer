@@ -42,8 +42,7 @@ function saveUndoState() {
   undoStack.push({
     elements: ui.elements.map((e) => ({ ...e })),
     overlaps: ui.overlaps.map(([a, b]) => [a, b]),
-    checkedIds: new Set(ui.checkedIds),
-    selectedElementId: ui.selectedElementId,
+    selectedIds: new Set(ui.selectedIds),
     elementMap: ui.elementMap,
     nextElementId,
   });
@@ -55,8 +54,7 @@ function undo() {
   const state = undoStack.pop();
   ui.elements = state.elements;
   ui.overlaps = state.overlaps;
-  ui.checkedIds = state.checkedIds;
-  ui.selectedElementId = state.selectedElementId;
+  ui.selectedIds = state.selectedIds;
   ui.elementMap = state.elementMap;
   nextElementId = state.nextElementId;
   ui.render();
@@ -111,8 +109,7 @@ async function loadImage(file) {
   // Reset state
   ui.elements = [];
   ui.overlaps = [];
-  ui.selectedElementId = null;
-  ui.checkedIds = new Set();
+  ui.selectedIds = new Set();
   ui.elementMap = null;
   nextElementId = 1;
   undoStack.length = 0;
@@ -258,7 +255,7 @@ function processImage() {
 
   // Detect overlapping bounding boxes (for visual indicator only, no auto-merge)
   ui.overlaps = slicer.detectOverlaps(elements, overlapDist);
-  ui.checkedIds = new Set();
+  ui.selectedIds = new Set();
 
   ui.render();
   updateElementList();
@@ -282,7 +279,7 @@ function updateElementList() {
   for (const el of ui.elements) {
     const item = document.createElement('div');
     item.className = 'element-item';
-    if (el.id === ui.selectedElementId) item.classList.add('selected');
+    if (ui.selectedIds.has(el.id)) item.classList.add('selected');
 
     const name = el.name || `element_${String(el.id).padStart(3, '0')}`;
 
@@ -294,12 +291,6 @@ function updateElementList() {
     thumbCanvas.height = 48;
     renderThumbnail(thumbCanvas, el);
     thumbDiv.appendChild(thumbCanvas);
-
-    // Build all elements via DOM API to avoid innerHTML destroying the canvas
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    checkbox.checked = ui.checkedIds.has(el.id);
-    checkbox.dataset.id = el.id;
 
     const nameDiv = document.createElement('div');
     nameDiv.className = 'name';
@@ -315,16 +306,26 @@ function updateElementList() {
     downloadBtn.title = t('download');
     downloadBtn.textContent = '⬇';
 
-    item.appendChild(checkbox);
     item.appendChild(thumbDiv);
     item.appendChild(nameDiv);
     item.appendChild(downloadBtn);
 
     item.addEventListener('click', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
-      ui.selectedElementId = el.id;
+      if (e.shiftKey) {
+        // Shift+click: toggle in multi-select
+        if (ui.selectedIds.has(el.id)) {
+          ui.selectedIds.delete(el.id);
+        } else {
+          ui.selectedIds.add(el.id);
+        }
+      } else {
+        // Normal click: select only this
+        ui.selectedIds = new Set([el.id]);
+      }
       ui.render();
       updateElementList();
+      updateExportButtons();
     });
 
     item.addEventListener('contextmenu', (e) => {
@@ -334,19 +335,6 @@ function updateElementList() {
 
     list.appendChild(item);
   }
-
-  // Bind checkbox events
-  list.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
-    cb.addEventListener('change', (e) => {
-      const id = +e.target.dataset.id;
-      if (e.target.checked) {
-        ui.checkedIds.add(id);
-      } else {
-        ui.checkedIds.delete(id);
-      }
-      updateExportButtons();
-    });
-  });
 
   // Bind name input events
   list.querySelectorAll('input[type="text"]').forEach((input) => {
@@ -400,9 +388,8 @@ function showContextMenu(x, y, el) {
   deleteItem.addEventListener('click', () => {
     saveUndoState();
     ui.elements = ui.elements.filter((e) => e.id !== el.id);
-    ui.checkedIds.delete(el.id);
+    ui.selectedIds.delete(el.id);
     ui.overlaps = ui.overlaps.filter(([a, b]) => a !== el.id && b !== el.id);
-    if (ui.selectedElementId === el.id) ui.selectedElementId = null;
     ui.render();
     updateElementList();
     updateExportButtons();
@@ -461,7 +448,7 @@ ui.onNewBox = ({ x, y, w, h }) => {
   const newEl = { id: nextElementId++, x, y, w, h, pixelCount: 0 };
   ui.elements.push(newEl);
   ui.overlaps = slicer.detectOverlaps(ui.elements, +document.getElementById('overlap-distance').value);
-  ui.selectedElementId = newEl.id;
+  ui.selectedIds = new Set([newEl.id]);
   ui.render();
   updateElementList();
   updateExportButtons();
@@ -481,11 +468,10 @@ ui.onBeforeDrag = () => saveUndoState();
 // --- Export ---
 
 function updateExportButtons() {
-  document.getElementById('export-selected').disabled = ui.checkedIds.size === 0;
+  document.getElementById('export-selected').disabled = ui.selectedIds.size === 0;
   document.getElementById('export-all').disabled = ui.elements.length === 0;
-  document.getElementById('merge-selected-btn').disabled = ui.checkedIds.size < 2;
-  document.getElementById('delete-selected-btn').disabled =
-    ui.checkedIds.size === 0 && ui.selectedElementId == null;
+  document.getElementById('merge-selected-btn').disabled = ui.selectedIds.size < 2;
+  document.getElementById('delete-selected-btn').disabled = ui.selectedIds.size === 0;
 }
 
 function getElementCanvas(el) {
@@ -545,7 +531,7 @@ function downloadElement(el) {
 }
 
 document.getElementById('export-selected').addEventListener('click', async () => {
-  const selected = ui.elements.filter((e) => ui.checkedIds.has(e.id));
+  const selected = ui.elements.filter((e) => ui.selectedIds.has(e.id));
   if (selected.length === 1) {
     downloadElement(selected[0]);
     return;
@@ -603,22 +589,12 @@ document.getElementById('add-box-btn').addEventListener('click', () => {
 });
 
 document.getElementById('delete-selected-btn').addEventListener('click', () => {
-  // Delete checked elements, or the selected element if none checked
-  let idsToDelete;
-  if (ui.checkedIds.size > 0) {
-    idsToDelete = [...ui.checkedIds];
-  } else if (ui.selectedElementId != null) {
-    idsToDelete = [ui.selectedElementId];
-  } else {
-    return;
-  }
-
+  if (ui.selectedIds.size === 0) return;
   saveUndoState();
-  const deleteSet = new Set(idsToDelete);
+  const deleteSet = new Set(ui.selectedIds);
   ui.elements = ui.elements.filter((e) => !deleteSet.has(e.id));
-  for (const id of idsToDelete) ui.checkedIds.delete(id);
   ui.overlaps = ui.overlaps.filter(([a, b]) => !deleteSet.has(a) && !deleteSet.has(b));
-  if (deleteSet.has(ui.selectedElementId)) ui.selectedElementId = null;
+  ui.selectedIds = new Set();
   ui.render();
   updateElementList();
   updateExportButtons();
@@ -627,10 +603,10 @@ document.getElementById('delete-selected-btn').addEventListener('click', () => {
 // --- Merge Selected Elements ---
 
 document.getElementById('merge-selected-btn').addEventListener('click', () => {
-  if (ui.checkedIds.size < 2) return;
+  if (ui.selectedIds.size < 2) return;
   saveUndoState();
 
-  const ids = [...ui.checkedIds];
+  const ids = [...ui.selectedIds];
   const toMerge = ui.elements.filter((e) => ids.includes(e.id));
   if (toMerge.length < 2) return;
 
@@ -666,8 +642,7 @@ document.getElementById('merge-selected-btn').addEventListener('click', () => {
     .concat(merged)
     .sort((a, b) => a.id - b.id);
 
-  ui.checkedIds = new Set();
-  ui.selectedElementId = mergedId;
+  ui.selectedIds = new Set([mergedId]);
   ui.overlaps = slicer.detectOverlaps(ui.elements, +document.getElementById('overlap-distance').value);
   ui.render();
   updateElementList();
@@ -687,21 +662,12 @@ window.addEventListener('keydown', (e) => {
   // Delete/Backspace: delete selected element
   if (e.key === 'Delete' || e.key === 'Backspace') {
     if (e.target.tagName === 'INPUT') return;
-    // Delete checked, or selected if none checked
-    let idsToDelete;
-    if (ui.checkedIds.size > 0) {
-      idsToDelete = [...ui.checkedIds];
-    } else if (ui.selectedElementId != null) {
-      idsToDelete = [ui.selectedElementId];
-    } else {
-      return;
-    }
+    if (ui.selectedIds.size === 0) return;
     saveUndoState();
-    const deleteSet = new Set(idsToDelete);
+    const deleteSet = new Set(ui.selectedIds);
     ui.elements = ui.elements.filter((el) => !deleteSet.has(el.id));
-    for (const id of idsToDelete) ui.checkedIds.delete(id);
     ui.overlaps = ui.overlaps.filter(([a, b]) => !deleteSet.has(a) && !deleteSet.has(b));
-    if (deleteSet.has(ui.selectedElementId)) ui.selectedElementId = null;
+    ui.selectedIds = new Set();
     ui.render();
     updateElementList();
     updateExportButtons();
@@ -710,7 +676,7 @@ window.addEventListener('keydown', (e) => {
 
   // Escape: deselect / exit modes
   if (e.key === 'Escape') {
-    ui.selectedElementId = null;
+    ui.selectedIds = new Set();
     ui.eyedropperMode = false;
     ui.addBoxMode = false;
     bgEyedropper.classList.remove('active');

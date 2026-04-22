@@ -16,8 +16,7 @@ export default class UIController {
     this.processedData = null;
     this.elements = [];
     this.overlaps = [];
-    this.selectedElementId = null;
-    this.checkedIds = new Set();
+    this.selectedIds = new Set(); // multi-select
     this.elementMap = null; // Int32Array pixel→elementId map
 
     // Interaction state
@@ -89,25 +88,44 @@ export default class UIController {
     const hitEl = this._hitTestElement(imgPos.x, imgPos.y);
     if (hitEl) {
       if (e.button === 0) {
-        if (this.onBeforeDrag) this.onBeforeDrag();
-        this.selectedElementId = hitEl.id;
-        this.draggingElement = {
-          id: hitEl.id,
-          offsetX: imgPos.x - hitEl.x,
-          offsetY: imgPos.y - hitEl.y,
-        };
-        if (this.onElementSelect) this.onElementSelect(hitEl.id);
-        this.render();
+        if (e.shiftKey) {
+          // Shift+click: toggle in multi-select
+          if (this.selectedIds.has(hitEl.id)) {
+            this.selectedIds.delete(hitEl.id);
+          } else {
+            this.selectedIds.add(hitEl.id);
+          }
+          if (this.onElementSelect) this.onElementSelect();
+          this.render();
+        } else {
+          // Normal click: select only this, start drag
+          if (this.onBeforeDrag) this.onBeforeDrag();
+          this.selectedIds = new Set([hitEl.id]);
+          this.draggingElement = {
+            id: hitEl.id,
+            offsetX: imgPos.x - hitEl.x,
+            offsetY: imgPos.y - hitEl.y,
+          };
+          if (this.onElementSelect) this.onElementSelect();
+          this.render();
+        }
       }
       return;
     }
 
-    if (e.shiftKey || this.addBoxMode) {
+    if (this.addBoxMode || e.shiftKey) {
       this.drawingBox = {
         startX: imgPos.x, startY: imgPos.y,
         endX: imgPos.x, endY: imgPos.y,
       };
       return;
+    }
+
+    // Click on empty space without shift: deselect all
+    if (!e.shiftKey && this.selectedIds.size > 0) {
+      this.selectedIds = new Set();
+      if (this.onElementSelect) this.onElementSelect();
+      this.render();
     }
 
     this.isPanning = true;
@@ -364,7 +382,7 @@ export default class UIController {
         if (elId === 0) continue;
         const c = colors[(elId - 1) % colors.length];
         const pi = i * 4;
-        const isSelected = elId === this.selectedElementId;
+        const isSelected = this.selectedIds.has(elId);
         const alpha = isSelected ? 90 : 40;
         md[pi] = c[0]; md[pi + 1] = c[1]; md[pi + 2] = c[2]; md[pi + 3] = alpha;
       }
@@ -375,7 +393,7 @@ export default class UIController {
 
     // Draw element bounding boxes
     for (const el of this.elements) {
-      const isSelected = el.id === this.selectedElementId;
+      const isSelected = this.selectedIds.has(el.id);
 
       ctx.strokeStyle = isSelected ? '#e94560' : '#4fc3f7';
       ctx.lineWidth = (isSelected ? 2 : 1) / this.zoom;
